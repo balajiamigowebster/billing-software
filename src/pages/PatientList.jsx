@@ -1,32 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, X, Printer, User, Phone, MapPin, Stethoscope } from 'lucide-react';
+import { Search, Eye, X, Printer, User, Phone, MapPin, Stethoscope, AlertTriangle, Loader2, Plus } from 'lucide-react';
 
-export default function PatientList() {
+export default function PatientList({ onNavigate }) {
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Load patients from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('patients');
-    if (saved) {
-      setPatients(JSON.parse(saved));
+  // Fetch patients from backend API
+  const fetchPatients = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('http://localhost:5001/api/patients');
+      if (!response.ok) {
+        throw new Error('Failed to load patient records from server.');
+      }
+      const data = await response.json();
+      setPatients(data);
+    } catch (err) {
+      console.error('Error fetching patients:', err);
+      setError('Cannot connect to database server. Please verify the backend Express server is running on port 5001.');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchPatients();
   }, []);
 
   // Filter patients based on search term (name, ID, or mobile)
   const filteredPatients = patients.filter((patient) => {
     const term = searchTerm.toLowerCase();
+    const name = patient.patient_name || '';
+    const id = patient.patient_id_seq || '';
+    const mobile = patient.mobile_number || '';
+    const city = patient.city || '';
+    
     return (
-      patient.patientName?.toLowerCase().includes(term) ||
-      patient.patientId?.toLowerCase().includes(term) ||
-      patient.mobileNumber?.toLowerCase().includes(term) ||
-      patient.city?.toLowerCase().includes(term)
+      name.toLowerCase().includes(term) ||
+      id.toLowerCase().includes(term) ||
+      mobile.toLowerCase().includes(term) ||
+      city.toLowerCase().includes(term)
     );
   });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
+      {error && (
+        <div style={{ padding: '16px', borderRadius: '10px', backgroundColor: 'hsl(0, 75%, 95%)', color: 'hsl(0, 75%, 45%)', fontWeight: 600, fontSize: '0.9rem', border: '1px solid hsl(0, 75%, 90%)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <AlertTriangle size={18} />
+          {error}
+        </div>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* Header and Search Card */}
         <div className="card" style={{ gap: '16px' }}>
@@ -36,26 +65,42 @@ export default function PatientList() {
               <p className="card-subtitle">Search, view, and inspect registered patient profiles.</p>
             </div>
             
-            {/* Search Input */}
-            <div style={{ position: 'relative', width: '100%', maxWidth: '350px' }}>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Search name, ID, or phone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ paddingLeft: '44px', width: '100%' }}
-              />
-              <Search 
-                size={18} 
-                color="var(--text-secondary)" 
-                style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }}
-              />
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button 
+                className="btn btn-primary" 
+                onClick={() => onNavigate && onNavigate('patient-registry')}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.85rem' }}
+              >
+                <Plus size={16} /> Add Patient
+              </button>
+
+              {/* Search Input */}
+              <div style={{ position: 'relative', width: '100%', maxWidth: '280px', minWidth: '200px' }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Search name, ID, or phone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ paddingLeft: '44px', width: '100%' }}
+                  disabled={isLoading}
+                />
+                <Search 
+                  size={18} 
+                  color="var(--text-secondary)" 
+                  style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Data Table */}
-          {filteredPatients.length === 0 ? (
+          {/* Data Table states */}
+          {isLoading ? (
+            <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <Loader2 size={32} className="animate-spin" style={{ color: 'var(--primary)' }} />
+              <p>Loading patient records from MariaDB...</p>
+            </div>
+          ) : filteredPatients.length === 0 ? (
             <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
               <Search size={40} style={{ opacity: 0.3 }} />
               <p>{patients.length === 0 ? "No patients registered yet." : "No patients matching search criteria."}</p>
@@ -77,7 +122,7 @@ export default function PatientList() {
                 <tbody>
                   {filteredPatients.map((patient) => (
                     <tr 
-                      key={patient.patientId} 
+                      key={patient.patient_id_seq} 
                       style={{ 
                         borderBottom: '1px solid var(--border-color)', 
                         fontSize: '0.92rem', 
@@ -87,9 +132,9 @@ export default function PatientList() {
                       className="table-row-hover"
                       onClick={() => setSelectedPatient(patient)}
                     >
-                      <td style={{ padding: '14px', fontWeight: 600, color: 'var(--primary)' }}>{patient.patientId}</td>
-                      <td style={{ padding: '14px', fontWeight: 500 }}>{patient.patientName}</td>
-                      <td style={{ padding: '14px' }}>{patient.mobileNumber}</td>
+                      <td style={{ padding: '14px', fontWeight: 600, color: 'var(--primary)' }}>{patient.patient_id_seq}</td>
+                      <td style={{ padding: '14px', fontWeight: 500 }}>{patient.patient_name}</td>
+                      <td style={{ padding: '14px' }}>{patient.mobile_number}</td>
                       <td style={{ padding: '14px' }}>{patient.age}</td>
                       <td style={{ padding: '14px', textTransform: 'capitalize' }}>{patient.gender}</td>
                       <td style={{ padding: '14px' }}>{patient.city || '—'}</td>
@@ -156,7 +201,7 @@ export default function PatientList() {
             }}>
               <div>
                 <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)', backgroundColor: 'var(--primary-light)', padding: '4px 8px', borderRadius: '6px' }}>
-                  {selectedPatient.patientId}
+                  {selectedPatient.patient_id_seq}
                 </span>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginTop: '8px' }}>Patient Chart</h3>
               </div>
@@ -175,10 +220,10 @@ export default function PatientList() {
               {/* Profile Card Header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 600 }}>
-                  {selectedPatient.patientName?.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  {selectedPatient.patient_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
                 </div>
                 <div>
-                  <h4 style={{ fontSize: '1.15rem', fontWeight: 600 }}>{selectedPatient.patientName}</h4>
+                  <h4 style={{ fontSize: '1.15rem', fontWeight: 600 }}>{selectedPatient.patient_name}</h4>
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>
                     {selectedPatient.gender} • {selectedPatient.age} years old
                   </p>
@@ -194,7 +239,7 @@ export default function PatientList() {
                     <Phone size={16} color="var(--primary)" style={{ marginTop: '3px' }} />
                     <div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Mobile</div>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 500 }}>{selectedPatient.mobileNumber}</div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 500 }}>{selectedPatient.mobile_number}</div>
                     </div>
                   </div>
                   
@@ -229,14 +274,14 @@ export default function PatientList() {
                   <Stethoscope size={16} color="var(--primary)" style={{ marginTop: '3px' }} />
                   <div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Assigned Practitioner</div>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>{selectedPatient.doctorName || 'Dr. Arjun'}</div>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>{selectedPatient.doctor_name || 'Dr. Arjun Sharma'}</div>
                   </div>
                 </div>
 
                 <div style={{ backgroundColor: 'var(--bg-input)', padding: '16px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>Chief Complaint:</div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>Latest Chief Complaint:</div>
                   <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, fontStyle: 'italic' }}>
-                    "{selectedPatient.chiefComplaint || 'No complaints registered.'}"
+                    "{selectedPatient.chief_complaint || 'No complaints registered.'}"
                   </p>
                 </div>
               </div>

@@ -1,0 +1,20 @@
+{
+  "name": "dental-billing-server",
+  "version": "1.0.0",
+  "description": "Express backend server for Dental clinic registry database connecting to MariaDB",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mysql2": "^3.10.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

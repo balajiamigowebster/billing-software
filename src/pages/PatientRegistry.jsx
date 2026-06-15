@@ -4,16 +4,10 @@ import FormSelect from '../components/FormSelect';
 import FormTextarea from '../components/FormTextarea';
 
 export default function PatientRegistry({ onSaveSuccess }) {
-  // Load saved patients to calculate the next sequential Patient ID
-  const [patients, setPatients] = useState(() => {
-    const saved = localStorage.getItem('patients');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const getNextPatientId = (list) => {
-    const nextNum = list.length + 1;
-    return `PAT-${String(nextNum).padStart(4, '0')}`;
-  };
+  const [patientId, setPatientId] = useState('Loading...');
+  const [isLoadingId, setIsLoadingId] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [apiError, setApiError] = useState(null);
 
   const initialFormState = {
     patientName: '',
@@ -24,21 +18,35 @@ export default function PatientRegistry({ onSaveSuccess }) {
     pincode: '',
     city: '',
     address: '',
-    patientId: getNextPatientId(patients),
-    doctorName: 'Dr. Arjun',
+    doctorName: 'Dr. Arjun Sharma',
     chiefComplaint: ''
   };
 
   const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState({});
 
-  // Re-generate ID if patients list changes
+  // Fetch the next sequential Patient ID from Express
+  const fetchNextPatientId = async () => {
+    setIsLoadingId(true);
+    try {
+      const response = await fetch('http://localhost:5001/api/patients/next-id');
+      const data = await response.json();
+      if (data.nextId) {
+        setPatientId(data.nextId);
+      } else {
+        setPatientId('PAT-0001');
+      }
+    } catch (error) {
+      console.error('Error fetching next ID:', error);
+      setPatientId('PAT-ERR');
+    } finally {
+      setIsLoadingId(false);
+    }
+  };
+
   useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      patientId: getNextPatientId(patients)
-    }));
-  }, [patients]);
+    fetchNextPatientId();
+  }, []);
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -86,30 +94,51 @@ export default function PatientRegistry({ onSaveSuccess }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
+    if (isSaving || isLoadingId) return;
+
     if (validate()) {
-      const updatedPatients = [...patients, formData];
-      setPatients(updatedPatients);
-      localStorage.setItem('patients', JSON.stringify(updatedPatients));
-      
-      onSaveSuccess(`Patient ${formData.patientName} registered successfully! ID: ${formData.patientId}`);
-      
-      // Reset form but with the updated sequential patient ID
-      setFormData({
-        ...initialFormState,
-        patientId: getNextPatientId(updatedPatients)
-      });
-      setErrors({});
+      setIsSaving(true);
+      setApiError(null);
+      try {
+        const payload = {
+          ...formData,
+          patientId // Use the state-fetched sequence ID
+        };
+
+        const response = await fetch('http://localhost:5001/api/patients', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          onSaveSuccess(`Patient ${formData.patientName} saved successfully! ID: ${patientId}`);
+          setFormData(initialFormState);
+          setErrors({});
+          fetchNextPatientId(); // Fetch for next use
+        } else {
+          setApiError(data.error || 'Server error, database save failed.');
+        }
+      } catch (error) {
+        console.error('Network error saving patient:', error);
+        setApiError('Network connection failed. Make sure the database backend server is running!');
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
   const handleReset = () => {
-    setFormData({
-      ...initialFormState,
-      patientId: getNextPatientId(patients)
-    });
+    setFormData(initialFormState);
     setErrors({});
+    setApiError(null);
+    fetchNextPatientId();
   };
 
   const genderOptions = [
@@ -121,6 +150,12 @@ export default function PatientRegistry({ onSaveSuccess }) {
 
   return (
     <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {apiError && (
+        <div style={{ padding: '16px', borderRadius: '10px', backgroundColor: 'hsl(0, 75%, 95%)', color: 'hsl(0, 75%, 45%)', fontWeight: 600, fontSize: '0.9rem', border: '1px solid hsl(0, 75%, 90%)' }}>
+          {apiError}
+        </div>
+      )}
+
       {/* Patient Information Card */}
       <div className="card">
         <div className="card-header">
@@ -136,6 +171,7 @@ export default function PatientRegistry({ onSaveSuccess }) {
             onChange={handleChange}
             placeholder="Arjun Kumar"
             error={errors.patientName}
+            disabled={isSaving}
           />
           <FormInput
             label="Mobile Number"
@@ -145,6 +181,7 @@ export default function PatientRegistry({ onSaveSuccess }) {
             placeholder="9876543210"
             error={errors.mobileNumber}
             type="tel"
+            disabled={isSaving}
           />
           <FormInput
             label="Age"
@@ -154,6 +191,7 @@ export default function PatientRegistry({ onSaveSuccess }) {
             placeholder="30"
             error={errors.age}
             type="number"
+            disabled={isSaving}
           />
           <FormSelect
             label="Gender"
@@ -162,6 +200,7 @@ export default function PatientRegistry({ onSaveSuccess }) {
             onChange={handleChange}
             options={genderOptions}
             error={errors.gender}
+            disabled={isSaving}
           />
           <FormInput
             label="Email"
@@ -171,6 +210,7 @@ export default function PatientRegistry({ onSaveSuccess }) {
             placeholder="patient@gmail.com"
             error={errors.email}
             type="email"
+            disabled={isSaving}
           />
           <FormInput
             label="Pincode"
@@ -179,6 +219,7 @@ export default function PatientRegistry({ onSaveSuccess }) {
             onChange={handleChange}
             placeholder="600001"
             error={errors.pincode}
+            disabled={isSaving}
           />
           <FormInput
             label="City"
@@ -187,6 +228,7 @@ export default function PatientRegistry({ onSaveSuccess }) {
             onChange={handleChange}
             placeholder="Chennai"
             error={errors.city}
+            disabled={isSaving}
           />
           <FormInput
             label="Address"
@@ -195,6 +237,7 @@ export default function PatientRegistry({ onSaveSuccess }) {
             onChange={handleChange}
             placeholder="Address"
             error={errors.address}
+            disabled={isSaving}
           />
         </div>
       </div>
@@ -210,7 +253,7 @@ export default function PatientRegistry({ onSaveSuccess }) {
           <FormInput
             label="Patient ID"
             id="patientId"
-            value={formData.patientId}
+            value={patientId}
             readOnly
             disabled
           />
@@ -219,7 +262,8 @@ export default function PatientRegistry({ onSaveSuccess }) {
             id="doctorName"
             value={formData.doctorName}
             onChange={handleChange}
-            placeholder="Dr. Arjun"
+            placeholder="Dr. Arjun Sharma"
+            disabled={isSaving}
           />
           <FormTextarea
             label="Chief Complaint"
@@ -228,17 +272,18 @@ export default function PatientRegistry({ onSaveSuccess }) {
             onChange={handleChange}
             placeholder="Tooth pain, swelling, sensitivity..."
             rows={4}
+            disabled={isSaving}
           />
         </div>
       </div>
 
       {/* Action Bar */}
       <div className="action-bar">
-        <button type="button" className="btn btn-secondary" onClick={handleReset}>
+        <button type="button" className="btn btn-secondary" onClick={handleReset} disabled={isSaving}>
           Reset
         </button>
-        <button type="submit" className="btn btn-primary">
-          Save Patient
+        <button type="submit" className="btn btn-primary" disabled={isSaving || isLoadingId}>
+          {isSaving ? 'Saving...' : 'Save Patient'}
         </button>
       </div>
     </form>
