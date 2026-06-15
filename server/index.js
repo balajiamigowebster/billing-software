@@ -329,4 +329,12 @@ async function startServer() {
   }
 }
 
-startServer();
+export default app;
+
+if (process.env.VERCEL !== '1') {
+  startServer();
+} else {
+  initializeDatabase().catch((err) => {
+    console.error('Failed to initialize database on Vercel boot:', err);
+  });
+}

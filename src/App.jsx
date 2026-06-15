@@ -4,14 +4,19 @@ import PatientRegistry from './pages/PatientRegistry';
 import PatientList from './pages/PatientList';
 import MockDashboard from './pages/MockDashboard';
 import Toast from './components/Toast';
+import Login from './pages/Login';
 import { Menu, Stethoscope, X, Printer } from 'lucide-react';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    sessionStorage.getItem('dental_clinic_auth') === 'true'
+  );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('patient-registry');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [toast, setToast] = useState(null);
   const [activeInvoice, setActiveInvoice] = useState(null);
+  const [openRegisterModal, setOpenRegisterModal] = useState(false);
 
   const doctorInfo = {
     name: 'Dr. Arjun Sharma',
@@ -21,6 +26,15 @@ export default function App() {
 
   const handleToggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
+  };
+
+  const handleNavigate = (tabId) => {
+    if (tabId === 'patient-registry') {
+      setActiveTab('patient-list');
+      setOpenRegisterModal(true);
+    } else {
+      setActiveTab(tabId);
+    }
   };
 
   const handleSaveSuccess = (message) => {
@@ -34,6 +48,21 @@ export default function App() {
   const handleCloseToast = () => {
     setToast(null);
   };
+
+  const handleLogin = () => {
+    sessionStorage.setItem('dental_clinic_auth', 'true');
+    setIsAuthenticated(true);
+    setActiveTab('dashboard');
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('dental_clinic_auth');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={handleLogin} />;
+  }
 
   return (
     <>
@@ -70,10 +99,11 @@ export default function App() {
         collapsed={sidebarCollapsed}
         onToggle={handleToggleSidebar}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleNavigate}
         doctorInfo={doctorInfo}
         mobileOpen={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
+        onLogout={handleLogout}
       />
 
       {/* Main Panel Content */}
@@ -83,12 +113,15 @@ export default function App() {
           marginLeft: '0px', // Handled by Flex layouts
         }}
       >
-        {activeTab === 'patient-registry' ? (
-          <PatientRegistry onSaveSuccess={handleSaveSuccess} />
-        ) : activeTab === 'patient-list' ? (
-          <PatientList onNavigate={setActiveTab} />
+        {activeTab === 'patient-list' || activeTab === 'patient-registry' ? (
+          <PatientList 
+            onNavigate={handleNavigate} 
+            openRegisterModal={openRegisterModal || activeTab === 'patient-registry'}
+            onCloseRegisterModal={() => setOpenRegisterModal(false)}
+            onSaveSuccess={handleSaveSuccess}
+          />
         ) : (
-          <MockDashboard tab={activeTab} onNavigate={setActiveTab} onPrintInvoice={setActiveInvoice} />
+          <MockDashboard tab={activeTab} onNavigate={handleNavigate} onPrintInvoice={setActiveInvoice} />
         )}
       </main>
 

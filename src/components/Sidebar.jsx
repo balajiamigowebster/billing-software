@@ -1,7 +1,6 @@
 import React from 'react';
 import { 
   LayoutDashboard, 
-  UserPlus, 
   Users,
   Calendar, 
   Activity, 
@@ -10,7 +9,8 @@ import {
   BarChart3, 
   ChevronLeft, 
   ChevronRight,
-  Stethoscope
+  Stethoscope,
+  LogOut
 } from 'lucide-react';
 import ProfileCard from './ProfileCard';
 
@@ -21,11 +21,11 @@ export default function Sidebar({
   onTabChange,
   doctorInfo,
   mobileOpen,
-  onCloseMobile
+  onCloseMobile,
+  onLogout
 }) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'patient-registry', label: 'Patient Registry', icon: UserPlus },
     { id: 'patient-list', label: 'Patient List', icon: Users },
     { id: 'appointments', label: 'Appointments', icon: Calendar },
     { id: 'treatments', label: 'Treatments', icon: Activity },
@@ -85,6 +85,19 @@ export default function Sidebar({
               </button>
             );
           })}
+          {onLogout && (
+            <button
+              className="menu-item"
+              style={{ marginTop: '16px', color: 'hsl(0, 75%, 45%)' }}
+              onClick={onLogout}
+              title={collapsed ? "Log Out" : undefined}
+            >
+              <span className="menu-item-icon">
+                <LogOut size={20} />
+              </span>
+              {!collapsed && <span className="menu-item-text">Log Out</span>}
+            </button>
+          )}
         </nav>
       </div>
 

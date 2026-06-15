@@ -1,19 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Eye, X, Printer, User, Phone, MapPin, Stethoscope, AlertTriangle, Loader2, Plus } from 'lucide-react';
+import PatientRegistry from './PatientRegistry';
 
-export default function PatientList({ onNavigate }) {
+export default function PatientList({ onNavigate, openRegisterModal, onCloseRegisterModal, onSaveSuccess }) {
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+
+  useEffect(() => {
+    if (openRegisterModal) {
+      setShowRegisterModal(true);
+      if (onCloseRegisterModal) {
+        onCloseRegisterModal();
+      }
+    }
+  }, [openRegisterModal, onCloseRegisterModal]);
 
   // Fetch patients from backend API
   const fetchPatients = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:5001/api/patients');
+      const response = await fetch('/api/patients');
       if (!response.ok) {
         throw new Error('Failed to load patient records from server.');
       }
@@ -65,17 +76,17 @@ export default function PatientList({ onNavigate }) {
               <p className="card-subtitle">Search, view, and inspect registered patient profiles.</p>
             </div>
             
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <button 
                 className="btn btn-primary" 
-                onClick={() => onNavigate && onNavigate('patient-registry')}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.85rem' }}
+                onClick={() => setShowRegisterModal(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
               >
                 <Plus size={16} /> Add Patient
               </button>
 
               {/* Search Input */}
-              <div style={{ position: 'relative', width: '100%', maxWidth: '280px', minWidth: '200px' }}>
+              <div style={{ position: 'relative', width: '260px' }}>
                 <input
                   type="text"
                   className="form-input"
@@ -305,6 +316,36 @@ export default function PatientList({ onNavigate }) {
             </div>
           </div>
         </>
+      )}
+
+      {/* Patient Register Modal Overlay */}
+      {showRegisterModal && (
+        <div className="modal-backdrop" onClick={() => setShowRegisterModal(false)}>
+          <div className="invoice-modal" style={{ maxWidth: '750px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="invoice-modal-header">
+              <h3 style={{ fontWeight: 700, fontSize: '1.15rem' }}>Register New Patient</h3>
+              <button 
+                onClick={() => setShowRegisterModal(false)} 
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="invoice-modal-body">
+              <PatientRegistry 
+                isModal={true} 
+                onCancel={() => setShowRegisterModal(false)} 
+                onSaveSuccess={(message) => {
+                  setShowRegisterModal(false);
+                  if (onSaveSuccess) {
+                    onSaveSuccess(message);
+                  }
+                  fetchPatients();
+                }}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

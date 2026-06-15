@@ -3,7 +3,7 @@ import FormInput from '../components/FormInput';
 import FormSelect from '../components/FormSelect';
 import FormTextarea from '../components/FormTextarea';
 
-export default function PatientRegistry({ onSaveSuccess }) {
+export default function PatientRegistry({ onSaveSuccess, isModal = false, onCancel }) {
   const [patientId, setPatientId] = useState('Loading...');
   const [isLoadingId, setIsLoadingId] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -29,7 +29,7 @@ export default function PatientRegistry({ onSaveSuccess }) {
   const fetchNextPatientId = async () => {
     setIsLoadingId(true);
     try {
-      const response = await fetch('http://localhost:5001/api/patients/next-id');
+      const response = await fetch('/api/patients/next-id');
       const data = await response.json();
       if (data.nextId) {
         setPatientId(data.nextId);
@@ -107,7 +107,7 @@ export default function PatientRegistry({ onSaveSuccess }) {
           patientId // Use the state-fetched sequence ID
         };
 
-        const response = await fetch('http://localhost:5001/api/patients', {
+        const response = await fetch('/api/patients', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -149,7 +149,7 @@ export default function PatientRegistry({ onSaveSuccess }) {
   ];
 
   return (
-    <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: isModal ? '20px' : '24px' }}>
       {apiError && (
         <div style={{ padding: '16px', borderRadius: '10px', backgroundColor: 'hsl(0, 75%, 95%)', color: 'hsl(0, 75%, 45%)', fontWeight: 600, fontSize: '0.9rem', border: '1px solid hsl(0, 75%, 90%)' }}>
           {apiError}
@@ -157,7 +157,7 @@ export default function PatientRegistry({ onSaveSuccess }) {
       )}
 
       {/* Patient Information Card */}
-      <div className="card">
+      <div className={isModal ? "" : "card"} style={isModal ? { display: 'flex', flexDirection: 'column', gap: '16px' } : {}}>
         <div className="card-header">
           <h2 className="card-title">Patient Information</h2>
           <p className="card-subtitle">Basic patient details.</p>
@@ -243,7 +243,7 @@ export default function PatientRegistry({ onSaveSuccess }) {
       </div>
 
       {/* Visit Information Card */}
-      <div className="card">
+      <div className={isModal ? "" : "card"} style={isModal ? { display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' } : {}}>
         <div className="card-header">
           <h2 className="card-title">Visit Information</h2>
           <p className="card-subtitle">Visit and doctor details.</p>
@@ -278,7 +278,12 @@ export default function PatientRegistry({ onSaveSuccess }) {
       </div>
 
       {/* Action Bar */}
-      <div className="action-bar">
+      <div className={isModal ? "invoice-modal-footer" : "action-bar"} style={isModal ? { margin: '0 -24px -24px -24px', borderRadius: '0 0 var(--radius-lg) var(--radius-lg)' } : {}}>
+        {isModal && (
+          <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={isSaving}>
+            Cancel
+          </button>
+        )}
         <button type="button" className="btn btn-secondary" onClick={handleReset} disabled={isSaving}>
           Reset
         </button>
