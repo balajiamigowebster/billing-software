@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../config';
 import { 
   Users, 
   Calendar, 
@@ -61,14 +62,14 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
   const [isBooking, setIsBooking] = useState(false);
 
   const fetchInvoices = () => {
-    fetch('/api/invoices')
+    fetch(`${API_BASE}/api/invoices`)
       .then((res) => res.json())
       .then((data) => setInvoices(data))
       .catch((err) => console.error('Error loading invoices:', err));
   };
 
   const fetchAppointments = (date) => {
-    fetch(`/api/appointments?date=${date}`)
+    fetch(`${API_BASE}/api/appointments?date=${date}`)
       .then((res) => res.json())
       .then((data) => setAppointmentsList(data))
       .catch((err) => console.error('Error loading appointments:', err));
@@ -76,7 +77,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
 
   useEffect(() => {
     if (tab === 'dashboard') {
-      fetch('/api/patients')
+      fetch(`${API_BASE}/api/patients`)
         .then((res) => res.json())
         .then((data) => setPatients(data))
         .catch((err) => console.error('Error loading dashboard patients:', err));
@@ -97,11 +98,11 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
     setShowCreateModal(true);
 
     try {
-      const patientsRes = await fetch('/api/patients');
+      const patientsRes = await fetch(`${API_BASE}/api/patients`);
       const patientsData = await patientsRes.json();
       setPatientsList(patientsData);
 
-      const nextNoRes = await fetch('/api/invoices/next-no');
+      const nextNoRes = await fetch(`${API_BASE}/api/invoices/next-no`);
       const nextNoData = await nextNoRes.json();
       setNextInvoiceNo(nextNoData.nextNo);
     } catch (err) {
@@ -132,7 +133,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
     setFormError('');
 
     try {
-      const response = await fetch('/api/invoices', {
+      const response = await fetch(`${API_BASE}/api/invoices`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -167,7 +168,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
     setShowBookModal(true);
 
     try {
-      const patientsRes = await fetch('/api/patients');
+      const patientsRes = await fetch(`${API_BASE}/api/patients`);
       const patientsData = await patientsRes.json();
       setPatientsList(patientsData);
     } catch (err) {
@@ -187,7 +188,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
     setBookError('');
 
     try {
-      const response = await fetch('/api/appointments', {
+      const response = await fetch(`${API_BASE}/api/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

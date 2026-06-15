@@ -13,6 +13,18 @@ const PORT = process.env.PORT || 5001;
 app.use(cors());
 app.use(express.json());
 
+// Handle subdirectory/context path routing (e.g. Passenger/cPanel)
+app.use((req, res, next) => {
+  if (req.url.startsWith('/dental-billing')) {
+    req.url = req.url.substring('/dental-billing'.length);
+    if (!req.url.startsWith('/')) {
+      req.url = '/' + req.url;
+    }
+  }
+  next();
+});
+
+
 // 1. GET: Fetch all patients with their latest visit complaint and doctor
 app.get('/api/patients', async (req, res) => {
   try {

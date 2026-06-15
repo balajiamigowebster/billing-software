@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import FormInput from '../components/FormInput';
 import FormSelect from '../components/FormSelect';
 import FormTextarea from '../components/FormTextarea';
+import { API_BASE } from '../config';
 
 export default function PatientRegistry({ onSaveSuccess, isModal = false, onCancel }) {
   const [patientId, setPatientId] = useState('Loading...');
@@ -29,7 +30,7 @@ export default function PatientRegistry({ onSaveSuccess, isModal = false, onCanc
   const fetchNextPatientId = async () => {
     setIsLoadingId(true);
     try {
-      const response = await fetch('/api/patients/next-id');
+      const response = await fetch(`${API_BASE}/api/patients/next-id`);
       const data = await response.json();
       if (data.nextId) {
         setPatientId(data.nextId);
@@ -107,7 +108,7 @@ export default function PatientRegistry({ onSaveSuccess, isModal = false, onCanc
           patientId // Use the state-fetched sequence ID
         };
 
-        const response = await fetch('/api/patients', {
+        const response = await fetch(`${API_BASE}/api/patients`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

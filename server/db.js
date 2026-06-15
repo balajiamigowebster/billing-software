@@ -7,7 +7,7 @@ let pool;
 
 export async function initializeDatabase() {
   const connectionConfig = {
-    host: process.env.DB_HOST || ' http://amigowebster.in/dental-billing/',
+    host: process.env.DB_HOST || '127.0.0.1',
     port: parseInt(process.env.DB_PORT || '3306'),
     user: process.env.DB_USER || 'amigoweb_billing',
     password: process.env.DB_PASSWORD || 'Aammigo@123',

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Eye, X, Printer, User, Phone, MapPin, Stethoscope, AlertTriangle, Loader2, Plus } from 'lucide-react';
 import PatientRegistry from './PatientRegistry';
+import { API_BASE } from '../config';
 
 export default function PatientList({ onNavigate, openRegisterModal, onCloseRegisterModal, onSaveSuccess }) {
   const [patients, setPatients] = useState([]);
@@ -24,7 +25,7 @@ export default function PatientList({ onNavigate, openRegisterModal, onCloseRegi
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/patients');
+      const response = await fetch(`${API_BASE}/api/patients`);
       if (!response.ok) {
         throw new Error('Failed to load patient records from server.');
       }
