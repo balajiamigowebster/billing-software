@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   Calendar, 
-  DollarSign, 
+  IndianRupee, 
   Activity, 
   Plus, 
   Search,
@@ -239,11 +239,11 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
           </div>
           <div className="card" style={{ padding: '20px', gap: '16px', flexDirection: 'row', alignItems: 'center' }}>
             <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: 'hsl(36, 100%, 95%)', color: 'hsl(36, 100%, 45%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <DollarSign size={24} />
+              <IndianRupee size={24} />
             </div>
             <div>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Today's Revenue</p>
-              <h3 style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '2px' }}>$1,240</h3>
+              <h3 style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '2px' }}>₹1,240</h3>
             </div>
           </div>
           <div className="card" style={{ padding: '20px', gap: '16px', flexDirection: 'row', alignItems: 'center' }}>
@@ -523,11 +523,11 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
   // Render Treatments View
   if (tab === 'treatments') {
     const treatments = [
-      { id: 'T-101', name: 'Root Canal Therapy', cost: '$450', duration: '60 mins', color: 'var(--primary-light)' },
-      { id: 'T-102', name: 'Teeth Scaling & Polishing', cost: '$120', duration: '30 mins', color: 'hsl(142, 70%, 95%)' },
-      { id: 'T-103', name: 'Dental Veneers / Crowns', cost: '$800', duration: '90 mins', color: 'hsl(36, 100%, 95%)' },
-      { id: 'T-104', name: 'Composite Teeth Filling', cost: '$150', duration: '40 mins', color: 'hsl(325, 75%, 95%)' },
-      { id: 'T-105', name: 'Wisdom Tooth Extraction', cost: '$300', duration: '60 mins', color: 'hsl(190, 80%, 94%)' }
+      { id: 'T-101', name: 'Root Canal Therapy', cost: '₹450', duration: '60 mins', color: 'var(--primary-light)' },
+      { id: 'T-102', name: 'Teeth Scaling & Polishing', cost: '₹120', duration: '30 mins', color: 'hsl(142, 70%, 95%)' },
+      { id: 'T-103', name: 'Dental Veneers / Crowns', cost: '₹800', duration: '90 mins', color: 'hsl(36, 100%, 95%)' },
+      { id: 'T-104', name: 'Composite Teeth Filling', cost: '₹150', duration: '40 mins', color: 'hsl(325, 75%, 95%)' },
+      { id: 'T-105', name: 'Wisdom Tooth Extraction', cost: '₹300', duration: '60 mins', color: 'hsl(190, 80%, 94%)' }
     ];
 
     return (
@@ -596,7 +596,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
                       <td style={{ padding: '12px 8px', fontWeight: 600 }}>{inv.invoice_no}</td>
                       <td style={{ padding: '12px 8px', fontWeight: 500 }}>{inv.patient_name}</td>
                       <td style={{ padding: '12px 8px' }}>{formatDate(inv.invoice_date)}</td>
-                      <td style={{ padding: '12px 8px', fontWeight: 600 }}>${parseFloat(inv.amount).toFixed(2)}</td>
+                      <td style={{ padding: '12px 8px', fontWeight: 600 }}>₹{parseFloat(inv.amount).toFixed(2)}</td>
                       <td style={{ padding: '12px 8px' }}>
                         <span 
                           style={{ 
@@ -620,7 +620,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
                             patient: inv.patient_name,
                             patientId: inv.patient_id_seq,
                             date: formatDate(inv.invoice_date),
-                            amount: `$${parseFloat(inv.amount).toFixed(2)}`,
+                            amount: `₹${parseFloat(inv.amount).toFixed(2)}`,
                             status: inv.status,
                             description: inv.treatment_name,
                             doctor: 'Dr. Arjun Sharma'
@@ -700,7 +700,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
                         <option value="">Choose Treatment...</option>
                         {TREATMENTS.map((t) => (
                           <option key={t.id} value={t.name}>
-                            {t.name} (${t.cost})
+                            {t.name} (₹{t.cost})
                           </option>
                         ))}
                       </select>
@@ -708,7 +708,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
                   </div>
 
                   <div className="form-group" style={{ gap: '6px' }}>
-                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Amount ($)</label>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Amount (₹)</label>
                     <input 
                       type="number" 
                       step="0.01" 
