@@ -71,13 +71,13 @@ export default function PatientList({ onNavigate, openRegisterModal, onCloseRegi
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* Header and Search Card */}
         <div className="card" style={{ gap: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <div className="card-header-flex">
             <div>
               <h2 className="card-title">Patient Database</h2>
               <p className="card-subtitle">Search, view, and inspect registered patient profiles.</p>
             </div>
             
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div className="header-actions">
               <button 
                 className="btn btn-primary" 
                 onClick={() => setShowRegisterModal(true)}
@@ -87,7 +87,7 @@ export default function PatientList({ onNavigate, openRegisterModal, onCloseRegi
               </button>
 
               {/* Search Input */}
-              <div style={{ position: 'relative', width: '260px' }}>
+              <div className="search-input-container">
                 <input
                   type="text"
                   className="form-input"
@@ -118,7 +118,7 @@ export default function PatientList({ onNavigate, openRegisterModal, onCloseRegi
               <p>{patients.length === 0 ? "No patients registered yet." : "No patients matching search criteria."}</p>
             </div>
           ) : (
-            <div style={{ overflowX: 'auto', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+            <div className="table-responsive-container">
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
                 <thead>
                   <tr style={{ backgroundColor: 'var(--bg-input)', borderBottom: '1.5px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.88rem' }}>

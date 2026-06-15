@@ -262,7 +262,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
         <div className="dashboard-grid">
           {/* Recent Patients */}
           <div className="card" style={{ gap: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="card-header-flex">
               <div>
                 <h3 className="card-title">Recent Patients</h3>
                 <p className="card-subtitle">List of newly registered clinic patients.</p>
@@ -282,7 +282,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
                 <p>No patients registered yet.</p>
               </div>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
+              <div className="table-responsive-container" style={{ border: 'none' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '500px' }}>
                   <thead>
                     <tr style={{ borderBottom: '1.5px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
@@ -559,7 +559,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <div className="card">
-          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', flexDirection: 'row' }}>
+          <div className="card-header-flex">
             <div>
               <h2 className="card-title">Billing & Invoices</h2>
               <p className="card-subtitle">Manage billing accounts, pending balances, and printed invoices.</p>
@@ -573,7 +573,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
             </button>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive-container" style={{ border: 'none' }}>
             {invoices.length === 0 ? (
               <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                 <FileText size={40} style={{ opacity: 0.3 }} />
