@@ -7,7 +7,7 @@ let pool;
 
 export async function initializeDatabase() {
   const connectionConfig = {
-    host: process.env.DB_HOST || '127.0.0.1',
+    host: process.env.DB_HOST || 'node256.iseencloud.net',
     port: parseInt(process.env.DB_PORT || '3306'),
     user: process.env.DB_USER || 'amigoweb_billing',
     password: process.env.DB_PASSWORD || 'Aammigo@123',
@@ -18,7 +18,7 @@ export async function initializeDatabase() {
     const connection = await mysql.createConnection(connectionConfig);
     
     // 2. Create database if it doesn't exist
-    const dbName = process.env.DB_NAME || 'dental_clinic_db';
+    const dbName = process.env.DB_NAME || 'amigoweb_billiing';
     await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     await connection.end();
 
