@@ -14,6 +14,7 @@ export async function initializeDatabase() {
   };
 
   try {
+    console.log(`Connecting to MySQL/MariaDB database at ${connectionConfig.host}:${connectionConfig.port} as user ${connectionConfig.user}...`);
     // 1. Connect without database first
     const connection = await mysql.createConnection(connectionConfig);
     
@@ -191,7 +192,7 @@ export async function initializeDatabase() {
     console.log('Database and tables initialized successfully!');
     return true;
   } catch (error) {
-    console.warn('⚠️ MySQL/MariaDB connection failed. Activating local in-memory mock database fallback.');
+    console.warn(`⚠️ MySQL/MariaDB connection to ${connectionConfig.host} failed: ${error.message}. Activating local in-memory mock database fallback.`);
     pool = mockPool;
     return true;
   }
