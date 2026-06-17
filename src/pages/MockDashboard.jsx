@@ -268,7 +268,19 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
   };
 
   const handleOpenAddTreatmentModal = () => {
-    setAddFormCode('');
+    let nextNum = 101;
+    if (treatments.length > 0) {
+      const nums = treatments
+        .map(t => {
+          const parts = (t.treatment_code || '').split('-');
+          return parts.length === 2 ? parseInt(parts[1], 10) : null;
+        })
+        .filter(n => n !== null && !isNaN(n));
+      if (nums.length > 0) {
+        nextNum = Math.max(...nums) + 1;
+      }
+    }
+    setAddFormCode(`T-${nextNum}`);
     setAddFormName('');
     setAddFormCost('');
     setAddFormDuration('30 mins');
@@ -877,13 +889,13 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
                   )}
 
                   <div className="form-group" style={{ gap: '6px' }}>
-                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Treatment Code (Optional)</label>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Treatment Code</label>
                     <input 
                       type="text" 
                       className="form-input" 
-                      placeholder="e.g. T-106 (Auto-generated if left blank)"
                       value={addFormCode} 
-                      onChange={(e) => setAddFormCode(e.target.value)}
+                      readOnly
+                      disabled
                     />
                   </div>
 
