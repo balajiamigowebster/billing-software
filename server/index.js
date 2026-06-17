@@ -222,7 +222,8 @@ app.get('/api/invoices', async (req, res) => {
     const query = `
       SELECT i.id, i.invoice_no, i.treatment_name, i.amount, i.status, 
              DATE_FORMAT(i.invoice_date, '%Y-%m-%d') as invoice_date,
-             p.patient_name, p.patient_id_seq, p.id AS patient_table_id
+             p.patient_name, p.patient_id_seq, p.id AS patient_table_id,
+             p.age, p.gender
       FROM invoices i
       JOIN patients p ON i.patient_id = p.id
       ORDER BY i.id DESC

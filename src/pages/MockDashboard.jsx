@@ -1218,7 +1218,9 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice, showToa
                               amount: `₹${parseFloat(inv.amount).toFixed(2)}`,
                               status: inv.status,
                               description: inv.treatment_name,
-                              doctor: 'Dr. Arjun Sharma'
+                              doctor: 'Dr. Arjun Sharma',
+                              age: inv.age,
+                              gender: inv.gender
                             })}
                           >
                             <Printer size={12} /> Print
