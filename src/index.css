@@ -283,6 +283,22 @@ body {
   background-color: hsl(210, 20%, 92%);
 }
 
+.btn-danger {
+  background-color: hsl(0, 84%, 60%);
+  color: var(--text-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-danger:hover {
+  background-color: hsl(0, 84%, 50%);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-danger:active {
+  transform: translateY(0);
+}
+
 /* Sidebar Styling */
 .sidebar {
   width: var(--sidebar-width);

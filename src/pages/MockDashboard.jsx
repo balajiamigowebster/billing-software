@@ -102,6 +102,12 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
   const [editFormTreatmentError, setEditFormTreatmentError] = useState('');
   const [isUpdatingTreatment, setIsUpdatingTreatment] = useState(false);
 
+  // Delete Treatment Confirmation States
+  const [showDeleteTreatmentModal, setShowDeleteTreatmentModal] = useState(false);
+  const [deletingTreatment, setDeletingTreatment] = useState(null);
+  const [deleteTreatmentError, setDeleteTreatmentError] = useState('');
+  const [isDeletingTreatment, setIsDeletingTreatment] = useState(false);
+
   const fetchTreatments = () => {
     fetch(`${API_BASE}/api/treatments`)
       .then((res) => res.json())
@@ -360,20 +366,31 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
     }
   };
 
-  const handleDeleteTreatment = async (id, name) => {
-    if (window.confirm(`Are you sure you want to delete the treatment "${name}"?`)) {
-      try {
-        const response = await fetch(`${API_BASE}/api/treatments/${id}`, {
-          method: 'DELETE'
-        });
-        if (!response.ok) {
-          throw new Error('Failed to delete treatment.');
-        }
-        fetchTreatments();
-      } catch (err) {
-        console.error('Error deleting treatment:', err);
-        alert('Failed to delete treatment from database.');
+  const handleOpenDeleteTreatmentModal = (treatment) => {
+    setDeletingTreatment(treatment);
+    setDeleteTreatmentError('');
+    setShowDeleteTreatmentModal(true);
+  };
+
+  const handleConfirmDeleteTreatment = async () => {
+    if (!deletingTreatment) return;
+    setIsDeletingTreatment(true);
+    setDeleteTreatmentError('');
+    try {
+      const response = await fetch(`${API_BASE}/api/treatments/${deletingTreatment.id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete treatment.');
       }
+      setShowDeleteTreatmentModal(false);
+      setDeletingTreatment(null);
+      fetchTreatments();
+    } catch (err) {
+      console.error('Error deleting treatment:', err);
+      setDeleteTreatmentError('Failed to delete treatment from database.');
+    } finally {
+      setIsDeletingTreatment(false);
     }
   };
 
@@ -827,7 +844,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
                           <button 
                             className="btn btn-secondary" 
                             style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'hsl(0, 75%, 45%)' }}
-                            onClick={() => handleDeleteTreatment(tr.id, tr.treatment_name)}
+                            onClick={() => handleOpenDeleteTreatmentModal(tr)}
                           >
                             <Trash2 size={12} /> Delete
                           </button>
@@ -1013,6 +1030,69 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Treatment Confirmation Modal Overlay */}
+        {showDeleteTreatmentModal && deletingTreatment && (
+          <div className="modal-backdrop" onClick={() => setShowDeleteTreatmentModal(false)}>
+            <div className="invoice-modal" style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
+              <div className="invoice-modal-header" style={{ borderBottom: 'none', padding: '24px 24px 8px 24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: 'hsl(0, 100%, 96%)',
+                    color: 'hsl(0, 84%, 60%)'
+                  }}>
+                    <Trash2 size={20} />
+                  </div>
+                  <h3 style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--text-primary)' }}>Delete Treatment?</h3>
+                </div>
+                <button 
+                  onClick={() => setShowDeleteTreatmentModal(false)} 
+                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="invoice-modal-body" style={{ gap: '12px', padding: '8px 24px 24px 24px', overflowY: 'visible' }}>
+                {deleteTreatmentError && (
+                  <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: 'hsl(0, 75%, 95%)', color: 'hsl(0, 75%, 45%)', fontSize: '0.85rem', fontWeight: 500 }}>
+                    {deleteTreatmentError}
+                  </div>
+                )}
+                <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: 0 }}>
+                  Are you sure you want to delete the treatment <strong style={{ color: 'var(--text-primary)' }}>{deletingTreatment.treatment_name}</strong> (<span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{deletingTreatment.treatment_code}</span>)? This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="invoice-modal-footer" style={{ borderTop: 'none', padding: '16px 24px 24px 24px', backgroundColor: 'transparent' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }} 
+                  onClick={() => setShowDeleteTreatmentModal(false)}
+                  disabled={isDeletingTreatment}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-danger" 
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }} 
+                  onClick={handleConfirmDeleteTreatment}
+                  disabled={isDeletingTreatment}
+                >
+                  {isDeletingTreatment ? 'Deleting...' : 'Delete Treatment'}
+                </button>
+              </div>
             </div>
           </div>
         )}
