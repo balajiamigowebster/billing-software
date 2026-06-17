@@ -292,14 +292,6 @@ export default function PatientRegistry({ onSaveSuccess, isModal = false, onCanc
             readOnly
             disabled
           />
-          <FormSelect
-            label="Doctor Name"
-            id="doctorName"
-            value={formData.doctorName}
-            onChange={handleChange}
-            options={doctorsList.map(doc => ({ value: doc.doctor_name, label: doc.doctor_name }))}
-            disabled={isSaving}
-          />
           <FormTextarea
             label="Chief Complaint"
             id="chiefComplaint"
