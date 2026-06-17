@@ -39,18 +39,18 @@ export default function Sidebar({
       <div>
         <div className="sidebar-header">
           {!collapsed && (
-            <div className="logo-container">
-              <div className="logo-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(266, 40%, 96%)', boxShadow: '0 4px 10px rgba(107, 76, 113, 0.15)' }}>
-                <svg viewBox="0 0 100 100" width="28" height="28">
+            <div className="logo-container" style={{ gap: '14px' }}>
+              <div className="logo-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(266, 40%, 96%)', boxShadow: '0 4px 10px rgba(107, 76, 113, 0.15)', width: '48px', height: '48px', borderRadius: '12px', flexShrink: 0 }}>
+                <svg viewBox="0 0 100 100" width="34" height="34">
                   <path fill="#6b4c71" d="M20,25 C20,12 35,8 50,22 C65,8 80,12 80,25 C80,50 68,68 64,85 C63,88 59,88 58,85 C55,72 53,60 50,60 C47,60 45,72 42,85 C41,88 37,88 36,85 C32,68 20,50 20,25 Z" />
                 </svg>
               </div>
-              <span className="logo-text">Ranga's</span>
+              <span className="logo-text" style={{ fontSize: '1.45rem', fontWeight: 800 }}>Ranga's</span>
             </div>
           )}
           {collapsed && (
-            <div className="logo-icon" style={{ margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(266, 40%, 96%)', boxShadow: '0 4px 10px rgba(107, 76, 113, 0.15)' }}>
-              <svg viewBox="0 0 100 100" width="28" height="28">
+            <div className="logo-icon" style={{ margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(266, 40%, 96%)', boxShadow: '0 4px 10px rgba(107, 76, 113, 0.15)', width: '48px', height: '48px', borderRadius: '12px' }}>
+              <svg viewBox="0 0 100 100" width="34" height="34">
                 <path fill="#6b4c71" d="M20,25 C20,12 35,8 50,22 C65,8 80,12 80,25 C80,50 68,68 64,85 C63,88 59,88 58,85 C55,72 53,60 50,60 C47,60 45,72 42,85 C41,88 37,88 36,85 C32,68 20,50 20,25 Z" />
               </svg>
             </div>

@@ -84,12 +84,12 @@ export default function App() {
           <Menu size={24} />
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div className="logo-icon" style={{ width: '36px', height: '36px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(266, 40%, 96%)', boxShadow: '0 4px 10px rgba(107, 76, 113, 0.12)' }}>
-            <svg viewBox="0 0 100 100" width="26" height="26">
+          <div className="logo-icon" style={{ width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(266, 40%, 96%)', boxShadow: '0 4px 10px rgba(107, 76, 113, 0.12)', flexShrink: 0 }}>
+            <svg viewBox="0 0 100 100" width="34" height="34">
               <path fill="#6b4c71" d="M20,25 C20,12 35,8 50,22 C65,8 80,12 80,25 C80,50 68,68 64,85 C63,88 59,88 58,85 C55,72 53,60 50,60 C47,60 45,72 42,85 C41,88 37,88 36,85 C32,68 20,50 20,25 Z" />
             </svg>
           </div>
-          <span className="logo-text" style={{ fontSize: '1.1rem' }}>Ranga's</span>
+          <span className="logo-text" style={{ fontSize: '1.25rem', fontWeight: 800 }}>Ranga's</span>
         </div>
         <div className="profile-avatar" style={{ width: '32px', height: '32px', fontSize: '0.8rem' }}>
           {doctorInfo.initials}
