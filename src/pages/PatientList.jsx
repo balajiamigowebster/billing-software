@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, X, Printer, User, Phone, MapPin, Stethoscope, AlertTriangle, Loader2, Plus } from 'lucide-react';
+import { Search, Eye, X, Printer, User, Phone, MapPin, Stethoscope, AlertTriangle, Loader2, Plus, Calendar } from 'lucide-react';
 import PatientRegistry from './PatientRegistry';
 import { API_BASE } from '../config';
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '—';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  const year = parts[0];
+  const monthIdx = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  return `${months[monthIdx]} ${day}, ${year}`;
+};
 
 export default function PatientList({ onNavigate, openRegisterModal, onCloseRegisterModal, onSaveSuccess }) {
   const [patients, setPatients] = useState([]);
@@ -128,6 +139,7 @@ export default function PatientList({ onNavigate, openRegisterModal, onCloseRegi
                     <th style={{ padding: '16px 14px', fontWeight: 600 }}>Age</th>
                     <th style={{ padding: '16px 14px', fontWeight: 600 }}>Gender</th>
                     <th style={{ padding: '16px 14px', fontWeight: 600 }}>City</th>
+                    <th style={{ padding: '16px 14px', fontWeight: 600 }}>Next Appointment</th>
                     <th style={{ padding: '16px 14px', fontWeight: 600, textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
@@ -150,6 +162,16 @@ export default function PatientList({ onNavigate, openRegisterModal, onCloseRegi
                       <td style={{ padding: '14px' }}>{patient.age}</td>
                       <td style={{ padding: '14px', textTransform: 'capitalize' }}>{patient.gender}</td>
                       <td style={{ padding: '14px' }}>{patient.city || '—'}</td>
+                      <td style={{ padding: '14px' }}>
+                        {patient.next_appointment_date ? (
+                          <div style={{ fontSize: '0.85rem' }}>
+                            <span style={{ fontWeight: 600 }}>{formatDate(patient.next_appointment_date)}</span>
+                            <span style={{ color: 'var(--text-secondary)', marginLeft: '6px' }}>({patient.appointment_time})</span>
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>—</span>
+                        )}
+                      </td>
                       <td style={{ padding: '14px', textAlign: 'right' }}>
                         <button 
                           className="btn btn-secondary" 
@@ -296,6 +318,38 @@ export default function PatientList({ onNavigate, openRegisterModal, onCloseRegi
                     "{selectedPatient.chief_complaint || 'No complaints registered.'}"
                   </p>
                 </div>
+              </div>
+
+              {/* Next Scheduled Appointment */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
+                <h5 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Next Scheduled Appointment</h5>
+                
+                {selectedPatient.next_appointment_date ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                      <Calendar size={16} color="var(--primary)" style={{ marginTop: '3px' }} />
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Date & Time</div>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>
+                          {formatDate(selectedPatient.next_appointment_date)} at {selectedPatient.appointment_time}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                      <User size={16} color="var(--primary)" style={{ marginTop: '3px' }} />
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Assigned Doctor</div>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>
+                          {selectedPatient.appt_doctor_name || selectedPatient.doctor_name || 'Dr. Arjun Sharma'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', fontStyle: 'italic' }}>
+                    No upcoming appointments scheduled.
+                  </div>
+                )}
               </div>
 
             </div>

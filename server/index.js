@@ -41,9 +41,10 @@ app.get('/api/doctors', async (req, res) => {
 app.get('/api/patients', async (req, res) => {
   try {
     const pool = getPool();
-    // Query joins patients with their latest visit details and doctor names
     const query = `
-      SELECT p.*, v.chief_complaint, d.doctor_name
+      SELECT p.*, v.chief_complaint, d.doctor_name,
+             DATE_FORMAT(a.appointment_date, '%Y-%m-%d') as next_appointment_date,
+             a.appointment_time, ad.doctor_name as appt_doctor_name
       FROM patients p
       LEFT JOIN (
         SELECT v1.patient_id, v1.chief_complaint, v1.doctor_id
@@ -55,6 +56,16 @@ app.get('/api/patients', async (req, res) => {
         ) v2 ON v1.id = v2.max_visit_id
       ) v ON p.id = v.patient_id
       LEFT JOIN doctors d ON v.doctor_id = d.id
+      LEFT JOIN (
+        SELECT a1.patient_id, a1.appointment_date, a1.appointment_time, a1.doctor_id
+        FROM appointments a1
+        INNER JOIN (
+          SELECT patient_id, MAX(id) as max_appt_id
+          FROM appointments
+          GROUP BY patient_id
+        ) a2 ON a1.id = a2.max_appt_id
+      ) a ON p.id = a.patient_id
+      LEFT JOIN doctors ad ON a.doctor_id = ad.id
       ORDER BY p.id DESC
     `;
     const [rows] = await pool.query(query);
