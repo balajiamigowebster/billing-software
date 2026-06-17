@@ -307,6 +307,41 @@ app.post('/api/invoices', async (req, res) => {
   }
 });
 
+// GET / PUT: Update an existing invoice
+app.put('/api/invoices/:id', async (req, res) => {
+  const { id } = req.params;
+  const { treatmentName, amount, status, invoiceDate } = req.body;
+
+  if (!treatmentName || amount === undefined || !status || !invoiceDate) {
+    return res.status(400).json({ error: 'Missing mandatory invoice fields' });
+  }
+
+  try {
+    const pool = getPool();
+    const query = `
+      UPDATE invoices
+      SET treatment_name = ?, amount = ?, status = ?, invoice_date = ?
+      WHERE id = ?
+    `;
+    const [result] = await pool.query(query, [
+      treatmentName,
+      parseFloat(amount),
+      status,
+      invoiceDate,
+      parseInt(id, 10)
+    ]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    res.json({ success: true, message: 'Invoice updated successfully!' });
+  } catch (error) {
+    console.error('Error updating invoice:', error);
+    res.status(500).json({ error: 'Failed to update invoice' });
+  }
+});
+
 // 7. GET: Fetch all appointments for a specific date
 app.get('/api/appointments', async (req, res) => {
   const { date } = req.query;

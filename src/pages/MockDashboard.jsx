@@ -10,7 +10,10 @@ import {
   FileText,
   Clock,
   Printer,
-  X
+  X,
+  Pencil,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const TREATMENTS = [
@@ -60,6 +63,20 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
   const [bookReason, setBookReason] = useState('');
   const [bookError, setBookError] = useState('');
   const [isBooking, setIsBooking] = useState(false);
+
+  // Billing Search, Pagination & Edit State
+  const [billingSearchTerm, setBillingSearchTerm] = useState('');
+  const [billingCurrentPage, setBillingCurrentPage] = useState(1);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState(null);
+  
+  // Edit Invoice Form State
+  const [editFormTreatment, setEditFormTreatment] = useState('');
+  const [editFormAmount, setEditFormAmount] = useState('');
+  const [editFormStatus, setEditFormStatus] = useState('Paid');
+  const [editFormDate, setEditFormDate] = useState('');
+  const [editFormError, setEditFormError] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const fetchInvoices = () => {
     fetch(`${API_BASE}/api/invoices`)
@@ -157,6 +174,63 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
       setFormError('Failed to save invoice to database.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenEditModal = (invoice) => {
+    setEditingInvoice(invoice);
+    setEditFormTreatment(invoice.treatment_name || '');
+    setEditFormAmount(invoice.amount || '');
+    setEditFormStatus(invoice.status || 'Paid');
+    setEditFormDate(invoice.invoice_date || '');
+    setEditFormError('');
+    setShowEditModal(true);
+  };
+
+  const handleEditTreatmentChange = (e) => {
+    const value = e.target.value;
+    setEditFormTreatment(value);
+    const selected = TREATMENTS.find(t => t.name === value);
+    if (selected) {
+      setEditFormAmount(selected.cost);
+    } else {
+      setEditFormAmount('');
+    }
+  };
+
+  const handleUpdateInvoice = async (e) => {
+    e.preventDefault();
+    if (!editFormTreatment || editFormAmount === '' || !editFormStatus || !editFormDate) {
+      setEditFormError('All fields are required.');
+      return;
+    }
+
+    setIsUpdating(true);
+    setEditFormError('');
+
+    try {
+      const response = await fetch(`${API_BASE}/api/invoices/${editingInvoice.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          treatmentName: editFormTreatment,
+          amount: parseFloat(editFormAmount),
+          status: editFormStatus,
+          invoiceDate: editFormDate
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update invoice.');
+      }
+
+      setShowEditModal(false);
+      fetchInvoices();
+    } catch (err) {
+      console.error('Error updating invoice:', err);
+      setEditFormError('Failed to update invoice in database.');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -556,6 +630,24 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
 
   // Render Billing View
   if (tab === 'billing') {
+    const filteredInvoices = invoices.filter((inv) => {
+      const term = billingSearchTerm.toLowerCase();
+      return (
+        (inv.invoice_no || '').toLowerCase().includes(term) ||
+        (inv.patient_name || '').toLowerCase().includes(term) ||
+        (inv.treatment_name || '').toLowerCase().includes(term) ||
+        (inv.status || '').toLowerCase().includes(term)
+      );
+    });
+
+    const itemsPerPage = 8;
+    const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+    const startIndex = (billingCurrentPage - 1) * itemsPerPage;
+    const paginatedInvoices = filteredInvoices.slice(startIndex, startIndex + itemsPerPage);
+    const totalEntries = filteredInvoices.length;
+    const displayStart = totalEntries === 0 ? 0 : startIndex + 1;
+    const displayEnd = Math.min(startIndex + itemsPerPage, totalEntries);
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <div className="card">
@@ -564,20 +656,36 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
               <h2 className="card-title">Billing & Invoices</h2>
               <p className="card-subtitle">Manage billing accounts, pending balances, and printed invoices.</p>
             </div>
-            <button 
-              className="btn btn-primary" 
-              onClick={handleOpenCreateModal}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontSize: '0.85rem' }}
-            >
-              <Plus size={16} /> Create Invoice
-            </button>
+            <div className="header-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div className="search-input-wrapper" style={{ position: 'relative', minWidth: '240px' }}>
+                <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="Search invoices..." 
+                  value={billingSearchTerm}
+                  onChange={(e) => {
+                    setBillingSearchTerm(e.target.value);
+                    setBillingCurrentPage(1);
+                  }}
+                  style={{ paddingLeft: '36px', height: '38px', fontSize: '0.85rem' }}
+                />
+              </div>
+              <button 
+                className="btn btn-primary" 
+                onClick={handleOpenCreateModal}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontSize: '0.85rem', height: '38px' }}
+              >
+                <Plus size={16} /> Create Invoice
+              </button>
+            </div>
           </div>
 
           <div className="table-responsive-container" style={{ border: 'none' }}>
-            {invoices.length === 0 ? (
+            {filteredInvoices.length === 0 ? (
               <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                 <FileText size={40} style={{ opacity: 0.3 }} />
-                <p>No invoices created yet.</p>
+                <p>No invoices found.</p>
               </div>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
@@ -592,7 +700,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices.map((inv) => (
+                  {paginatedInvoices.map((inv) => (
                     <tr key={inv.id} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}>
                       <td style={{ padding: '12px 8px', fontWeight: 600 }}>{inv.invoice_no}</td>
                       <td style={{ padding: '12px 8px', fontWeight: 500 }}>{inv.patient_name}</td>
@@ -613,22 +721,31 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
                         </span>
                       </td>
                       <td style={{ padding: '12px 8px' }}>
-                        <button 
-                          className="btn btn-secondary" 
-                          style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                          onClick={() => onPrintInvoice && onPrintInvoice({
-                            invoiceNo: inv.invoice_no,
-                            patient: inv.patient_name,
-                            patientId: inv.patient_id_seq,
-                            date: formatDate(inv.invoice_date),
-                            amount: `₹${parseFloat(inv.amount).toFixed(2)}`,
-                            status: inv.status,
-                            description: inv.treatment_name,
-                            doctor: 'Dr. Arjun Sharma'
-                          })}
-                        >
-                          <Printer size={12} /> Print
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => handleOpenEditModal(inv)}
+                          >
+                            <Pencil size={12} /> Edit
+                          </button>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => onPrintInvoice && onPrintInvoice({
+                              invoiceNo: inv.invoice_no,
+                              patient: inv.patient_name,
+                              patientId: inv.patient_id_seq,
+                              date: formatDate(inv.invoice_date),
+                              amount: `₹${parseFloat(inv.amount).toFixed(2)}`,
+                              status: inv.status,
+                              description: inv.treatment_name,
+                              doctor: 'Dr. Arjun Sharma'
+                            })}
+                          >
+                            <Printer size={12} /> Print
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -636,6 +753,32 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
               </table>
             )}
           </div>
+
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                Showing {displayStart} to {displayEnd} of {totalEntries} entries
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => setBillingCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={billingCurrentPage === 1}
+                  style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}
+                >
+                  <ChevronLeft size={16} /> Previous
+                </button>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => setBillingCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={billingCurrentPage === totalPages}
+                  style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}
+                >
+                  Next <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Create Invoice Modal Overlay */}
@@ -753,6 +896,109 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
                   </button>
                   <button type="submit" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }} disabled={isSubmitting}>
                     {isSubmitting ? 'Saving...' : 'Save Invoice'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Invoice Modal Overlay */}
+        {showEditModal && editingInvoice && (
+          <div className="modal-backdrop" onClick={() => setShowEditModal(false)}>
+            <div className="invoice-modal" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
+              <div className="invoice-modal-header">
+                <h3 style={{ fontWeight: 700, fontSize: '1.15rem' }}>Edit Invoice - {editingInvoice.invoice_no}</h3>
+                <button 
+                  onClick={() => setShowEditModal(false)} 
+                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={handleUpdateInvoice}>
+                <div className="invoice-modal-body" style={{ gap: '16px' }}>
+                  {editFormError && (
+                    <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: 'hsl(0, 75%, 95%)', color: 'hsl(0, 75%, 45%)', fontSize: '0.85rem', fontWeight: 500 }}>
+                      {editFormError}
+                    </div>
+                  )}
+
+                  <div className="form-group" style={{ gap: '6px' }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Patient</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={`${editingInvoice.patient_name} (${editingInvoice.patient_id_seq})`} 
+                      disabled 
+                      readOnly
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ gap: '6px' }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Treatment / Service</label>
+                    <div className="select-wrapper">
+                      <select 
+                        className="form-select" 
+                        value={editFormTreatment} 
+                        onChange={handleEditTreatmentChange}
+                        required
+                      >
+                        <option value="">Choose Treatment...</option>
+                        {TREATMENTS.map((t) => (
+                          <option key={t.id} value={t.name}>
+                            {t.name} (₹{t.cost})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ gap: '6px' }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Amount (₹)</label>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      className="form-input" 
+                      placeholder="0.00"
+                      value={editFormAmount} 
+                      onChange={(e) => setEditFormAmount(e.target.value)}
+                      required 
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ gap: '6px' }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Payment Status</label>
+                    <div className="select-wrapper">
+                      <select 
+                        className="form-select" 
+                        value={editFormStatus} 
+                        onChange={(e) => setEditFormStatus(e.target.value)}
+                        required
+                      >
+                        <option value="Paid">Paid</option>
+                        <option value="Pending">Pending</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ gap: '6px' }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Invoice Date</label>
+                    <input 
+                      type="date" 
+                      className="form-input" 
+                      value={editFormDate} 
+                      onChange={(e) => setEditFormDate(e.target.value)}
+                      required 
+                    />
+                  </div>
+                </div>
+                <div className="invoice-modal-footer">
+                  <button type="button" className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={() => setShowEditModal(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }} disabled={isUpdating}>
+                    {isUpdating ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </form>
