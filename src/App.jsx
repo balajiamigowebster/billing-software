@@ -179,7 +179,7 @@ export default function App() {
                 {/* Letterhead Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2.5px solid #6b4c71', paddingBottom: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <svg viewBox="0 0 100 100" width="150" height="150" style={{ marginRight: '16px', flexShrink: 0 }}>
+                    <svg viewBox="0 0 100 100" width="100" height="100" style={{ marginRight: '16px', flexShrink: 0 }}>
                       <path fill="#6b4c71" d="M20,25 C20,12 35,8 50,22 C65,8 80,12 80,25 C80,50 68,68 64,85 C63,88 59,88 58,85 C55,72 53,60 50,60 C47,60 45,72 42,85 C41,88 37,88 36,85 C32,68 20,50 20,25 Z" />
                     </svg>
                     <div>
@@ -323,7 +323,7 @@ export default function App() {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2.5px solid #6b4c71', paddingBottom: '16px', marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                <svg viewBox="0 0 100 100" width="150" height="150" style={{ marginRight: '18px', flexShrink: 0 }}>
+                <svg viewBox="0 0 100 100" width="100" height="100" style={{ marginRight: '18px', flexShrink: 0 }}>
                   <path fill="#6b4c71" d="M20,25 C20,12 35,8 50,22 C65,8 80,12 80,25 C80,50 68,68 64,85 C63,88 59,88 58,85 C55,72 53,60 50,60 C47,60 45,72 42,85 C41,88 37,88 36,85 C32,68 20,50 20,25 Z" />
                 </svg>
                 <div>
