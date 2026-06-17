@@ -25,6 +25,18 @@ app.use((req, res, next) => {
 });
 
 
+// GET: Fetch all doctors list
+app.get('/api/doctors', async (req, res) => {
+  try {
+    const pool = getPool();
+    const [rows] = await pool.query('SELECT * FROM doctors ORDER BY doctor_name ASC');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching doctors:', error);
+    res.status(500).json({ error: 'Failed to fetch doctors list' });
+  }
+});
+
 // 1. GET: Fetch all patients with their latest visit complaint and doctor
 app.get('/api/patients', async (req, res) => {
   try {
@@ -80,7 +92,10 @@ app.post('/api/patients', async (req, res) => {
     address,
     patientId,
     doctorName,
-    chiefComplaint
+    chiefComplaint,
+    appointmentDate,
+    appointmentTime,
+    appointmentDoctorName
   } = req.body;
 
   // Simple validation
@@ -135,6 +150,45 @@ app.post('/api/patients', async (req, res) => {
       doctorTableId,
       chiefComplaint || 'Consultation'
     ]);
+
+    // 4. Optionally Insert Next Appointment Record
+    if (appointmentDate && appointmentTime) {
+      const apptDoc = appointmentDoctorName || doctorName;
+      const [apptDoctorRows] = await connection.query(
+        'SELECT id FROM doctors WHERE doctor_name LIKE ? OR email = ? LIMIT 1',
+        [`%${apptDoc}%`, 'arjun.sharma@dentalerp.com']
+      );
+
+      let apptDoctorTableId = 1; // Fallback default
+      if (apptDoctorRows.length > 0) {
+        apptDoctorTableId = apptDoctorRows[0].id;
+      }
+
+      const insertApptQuery = `
+        INSERT INTO appointments (patient_id, doctor_id, appointment_date, appointment_time, reason)
+        VALUES (?, ?, ?, ?, ?)
+      `;
+      await connection.query(insertApptQuery, [
+        patientTableId,
+        apptDoctorTableId,
+        appointmentDate,
+        appointmentTime,
+        'Initial Follow-up Appointment'
+      ]);
+
+      // Trigger WhatsApp notification for this next appointment
+      try {
+        await sendWhatsAppNotification(
+          patientName,
+          mobileNumber,
+          appointmentDate,
+          appointmentTime,
+          'Initial Follow-up Appointment'
+        );
+      } catch (err) {
+        console.warn('Could not send WhatsApp notification for next appointment:', err.message);
+      }
+    }
 
     // Commit SQL Transaction
     await connection.commit();

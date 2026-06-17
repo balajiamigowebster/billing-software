@@ -9,6 +9,7 @@ export default function PatientRegistry({ onSaveSuccess, isModal = false, onCanc
   const [isLoadingId, setIsLoadingId] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [apiError, setApiError] = useState(null);
+  const [doctorsList, setDoctorsList] = useState([{ id: 1, doctor_name: 'Dr. Arjun Sharma' }]);
 
   const initialFormState = {
     patientName: '',
@@ -20,7 +21,10 @@ export default function PatientRegistry({ onSaveSuccess, isModal = false, onCanc
     city: '',
     address: '',
     doctorName: 'Dr. Arjun Sharma',
-    chiefComplaint: ''
+    chiefComplaint: '',
+    nextAppointmentDate: '',
+    nextAppointmentTime: '',
+    appointmentDoctorName: 'Dr. Arjun Sharma'
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -47,6 +51,26 @@ export default function PatientRegistry({ onSaveSuccess, isModal = false, onCanc
 
   useEffect(() => {
     fetchNextPatientId();
+
+    const fetchDoctors = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/doctors`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.length > 0) {
+            setDoctorsList(data);
+            setFormData(prev => ({
+              ...prev,
+              doctorName: data[0].doctor_name,
+              appointmentDoctorName: data[0].doctor_name
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching doctors:', err);
+      }
+    };
+    fetchDoctors();
   }, []);
 
   const handleChange = (e) => {
@@ -90,6 +114,13 @@ export default function PatientRegistry({ onSaveSuccess, isModal = false, onCanc
     if (formData.pincode.trim() && !/^\d{6}$/.test(formData.pincode.trim())) {
       newErrors.pincode = 'Enter a valid 6-digit pincode';
     }
+
+    if (formData.nextAppointmentDate && !formData.nextAppointmentTime) {
+      newErrors.nextAppointmentTime = 'Please select a time slot';
+    }
+    if (formData.nextAppointmentTime && !formData.nextAppointmentDate) {
+      newErrors.nextAppointmentDate = 'Please select a date';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -105,7 +136,10 @@ export default function PatientRegistry({ onSaveSuccess, isModal = false, onCanc
       try {
         const payload = {
           ...formData,
-          patientId // Use the state-fetched sequence ID
+          patientId, // Use the state-fetched sequence ID
+          appointmentDate: formData.nextAppointmentDate || null,
+          appointmentTime: formData.nextAppointmentTime || null,
+          appointmentDoctorName: formData.appointmentDoctorName || null
         };
 
         const response = await fetch(`${API_BASE}/api/patients`, {
@@ -258,12 +292,12 @@ export default function PatientRegistry({ onSaveSuccess, isModal = false, onCanc
             readOnly
             disabled
           />
-          <FormInput
+          <FormSelect
             label="Doctor Name"
             id="doctorName"
             value={formData.doctorName}
             onChange={handleChange}
-            placeholder="Dr. Arjun Sharma"
+            options={doctorsList.map(doc => ({ value: doc.doctor_name, label: doc.doctor_name }))}
             disabled={isSaving}
           />
           <FormTextarea
@@ -273,6 +307,51 @@ export default function PatientRegistry({ onSaveSuccess, isModal = false, onCanc
             onChange={handleChange}
             placeholder="Tooth pain, swelling, sensitivity..."
             rows={4}
+            disabled={isSaving}
+          />
+        </div>
+      </div>
+
+      {/* Next Appointment (Optional) */}
+      <div className={isModal ? "" : "card"} style={isModal ? { display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' } : {}}>
+        <div className="card-header">
+          <h2 className="card-title">Next Appointment (Optional)</h2>
+          <p className="card-subtitle">Schedule follow-up appointments.</p>
+        </div>
+
+        <div className="form-grid">
+          <FormInput
+            label="Appointment Date"
+            id="nextAppointmentDate"
+            value={formData.nextAppointmentDate}
+            onChange={handleChange}
+            type="date"
+            error={errors.nextAppointmentDate}
+            disabled={isSaving}
+          />
+          
+          <FormSelect
+            label="Time Slot"
+            id="nextAppointmentTime"
+            value={formData.nextAppointmentTime}
+            onChange={handleChange}
+            options={[
+              { value: '', label: 'Select Time Slot' },
+              ...['09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM', '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM'].map(slot => ({
+                value: slot,
+                label: slot
+              }))
+            ]}
+            error={errors.nextAppointmentTime}
+            disabled={isSaving}
+          />
+
+          <FormSelect
+            label="Doctor for Appointment"
+            id="appointmentDoctorName"
+            value={formData.appointmentDoctorName}
+            onChange={handleChange}
+            options={doctorsList.map(doc => ({ value: doc.doctor_name, label: doc.doctor_name }))}
             disabled={isSaving}
           />
         </div>
