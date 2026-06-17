@@ -84,8 +84,8 @@ export default function App() {
           <Menu size={24} />
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div className="logo-icon" style={{ width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' }}>
-            <svg viewBox="0 0 100 100" width="22" height="22">
+          <div className="logo-icon" style={{ width: '36px', height: '36px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(266, 40%, 96%)', boxShadow: '0 4px 10px rgba(107, 76, 113, 0.12)' }}>
+            <svg viewBox="0 0 100 100" width="26" height="26">
               <path fill="#6b4c71" d="M20,25 C20,12 35,8 50,22 C65,8 80,12 80,25 C80,50 68,68 64,85 C63,88 59,88 58,85 C55,72 53,60 50,60 C47,60 45,72 42,85 C41,88 37,88 36,85 C32,68 20,50 20,25 Z" />
             </svg>
           </div>
@@ -179,7 +179,7 @@ export default function App() {
                 {/* Letterhead Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2.5px solid #6b4c71', paddingBottom: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <svg viewBox="0 0 100 100" width="60" height="60" style={{ marginRight: '12px', flexShrink: 0 }}>
+                    <svg viewBox="0 0 100 100" width="75" height="75" style={{ marginRight: '16px', flexShrink: 0 }}>
                       <path fill="#6b4c71" d="M20,25 C20,12 35,8 50,22 C65,8 80,12 80,25 C80,50 68,68 64,85 C63,88 59,88 58,85 C55,72 53,60 50,60 C47,60 45,72 42,85 C41,88 37,88 36,85 C32,68 20,50 20,25 Z" />
                     </svg>
                     <div>
@@ -323,7 +323,7 @@ export default function App() {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2.5px solid #6b4c71', paddingBottom: '16px', marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                <svg viewBox="0 0 100 100" width="75" height="75" style={{ marginRight: '16px', flexShrink: 0 }}>
+                <svg viewBox="0 0 100 100" width="90" height="90" style={{ marginRight: '18px', flexShrink: 0 }}>
                   <path fill="#6b4c71" d="M20,25 C20,12 35,8 50,22 C65,8 80,12 80,25 C80,50 68,68 64,85 C63,88 59,88 58,85 C55,72 53,60 50,60 C47,60 45,72 42,85 C41,88 37,88 36,85 C32,68 20,50 20,25 Z" />
                 </svg>
                 <div>
