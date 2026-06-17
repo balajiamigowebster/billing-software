@@ -13,7 +13,8 @@ import {
   X,
   Pencil,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 
 const TREATMENTS = [
@@ -78,6 +79,36 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
   const [editFormError, setEditFormError] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // Treatments Database States
+  const [treatments, setTreatments] = useState([]);
+  const [treatmentsSearchTerm, setTreatmentsSearchTerm] = useState('');
+  const [treatmentsCurrentPage, setTreatmentsCurrentPage] = useState(1);
+  const [showAddTreatmentModal, setShowAddTreatmentModal] = useState(false);
+  const [showEditTreatmentModal, setShowEditTreatmentModal] = useState(false);
+  const [editingTreatment, setEditingTreatment] = useState(null);
+
+  // Add Treatment Form State
+  const [addFormCode, setAddFormCode] = useState('');
+  const [addFormName, setAddFormName] = useState('');
+  const [addFormCost, setAddFormCost] = useState('');
+  const [addFormDuration, setAddFormDuration] = useState('30 mins');
+  const [addFormError, setAddFormError] = useState('');
+  const [isAddingTreatment, setIsAddingTreatment] = useState(false);
+
+  // Edit Treatment Form State
+  const [editFormTreatmentName, setEditFormTreatmentName] = useState('');
+  const [editFormTreatmentCost, setEditFormTreatmentCost] = useState('');
+  const [editFormTreatmentDuration, setEditFormTreatmentDuration] = useState('');
+  const [editFormTreatmentError, setEditFormTreatmentError] = useState('');
+  const [isUpdatingTreatment, setIsUpdatingTreatment] = useState(false);
+
+  const fetchTreatments = () => {
+    fetch(`${API_BASE}/api/treatments`)
+      .then((res) => res.json())
+      .then((data) => setTreatments(data))
+      .catch((err) => console.error('Error loading treatments:', err));
+  };
+
   const fetchInvoices = () => {
     fetch(`${API_BASE}/api/invoices`)
       .then((res) => res.json())
@@ -93,6 +124,8 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
   };
 
   useEffect(() => {
+    fetchTreatments();
+
     if (tab === 'dashboard') {
       fetch(`${API_BASE}/api/patients`)
         .then((res) => res.json())
@@ -131,7 +164,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
   const handleTreatmentChange = (e) => {
     const value = e.target.value;
     setFormTreatment(value);
-    const selected = TREATMENTS.find(t => t.name === value);
+    const selected = treatments.find(t => t.treatment_name === value);
     if (selected) {
       setFormAmount(selected.cost);
     } else {
@@ -190,7 +223,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
   const handleEditTreatmentChange = (e) => {
     const value = e.target.value;
     setEditFormTreatment(value);
-    const selected = TREATMENTS.find(t => t.name === value);
+    const selected = treatments.find(t => t.treatment_name === value);
     if (selected) {
       setEditFormAmount(selected.cost);
     } else {
@@ -231,6 +264,104 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
       setEditFormError('Failed to update invoice in database.');
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleOpenAddTreatmentModal = () => {
+    setAddFormCode('');
+    setAddFormName('');
+    setAddFormCost('');
+    setAddFormDuration('30 mins');
+    setAddFormError('');
+    setShowAddTreatmentModal(true);
+  };
+
+  const handleSaveTreatment = async (e) => {
+    e.preventDefault();
+    if (!addFormName || addFormCost === '' || !addFormDuration) {
+      setAddFormError('Name, Cost, and Duration are required.');
+      return;
+    }
+    setIsAddingTreatment(true);
+    setAddFormError('');
+    try {
+      const response = await fetch(`${API_BASE}/api/treatments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          treatmentCode: addFormCode || null,
+          treatmentName: addFormName,
+          cost: parseFloat(addFormCost),
+          duration: addFormDuration
+        })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save treatment.');
+      }
+      setShowAddTreatmentModal(false);
+      fetchTreatments();
+    } catch (err) {
+      console.error('Error saving treatment:', err);
+      setAddFormError('Failed to save treatment to database.');
+    } finally {
+      setIsAddingTreatment(false);
+    }
+  };
+
+  const handleOpenEditTreatmentModal = (treatment) => {
+    setEditingTreatment(treatment);
+    setEditFormTreatmentName(treatment.treatment_name || '');
+    setEditFormTreatmentCost(treatment.cost || '');
+    setEditFormTreatmentDuration(treatment.duration || '30 mins');
+    setEditFormTreatmentError('');
+    setShowEditTreatmentModal(true);
+  };
+
+  const handleUpdateTreatment = async (e) => {
+    e.preventDefault();
+    if (!editFormTreatmentName || editFormTreatmentCost === '' || !editFormTreatmentDuration) {
+      setEditFormTreatmentError('Name, Cost, and Duration are required.');
+      return;
+    }
+    setIsUpdatingTreatment(true);
+    setEditFormTreatmentError('');
+    try {
+      const response = await fetch(`${API_BASE}/api/treatments/${editingTreatment.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          treatmentName: editFormTreatmentName,
+          cost: parseFloat(editFormTreatmentCost),
+          duration: editFormTreatmentDuration
+        })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update treatment.');
+      }
+      setShowEditTreatmentModal(false);
+      fetchTreatments();
+    } catch (err) {
+      console.error('Error updating treatment:', err);
+      setEditFormTreatmentError('Failed to update treatment in database.');
+    } finally {
+      setIsUpdatingTreatment(false);
+    }
+  };
+
+  const handleDeleteTreatment = async (id, name) => {
+    if (window.confirm(`Are you sure you want to delete the treatment "${name}"?`)) {
+      try {
+        const response = await fetch(`${API_BASE}/api/treatments/${id}`, {
+          method: 'DELETE'
+        });
+        if (!response.ok) {
+          throw new Error('Failed to delete treatment.');
+        }
+        fetchTreatments();
+      } catch (err) {
+        console.error('Error deleting treatment:', err);
+        alert('Failed to delete treatment from database.');
+      }
     }
   };
 
@@ -597,33 +728,282 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
 
   // Render Treatments View
   if (tab === 'treatments') {
-    const treatments = [
-      { id: 'T-101', name: 'Root Canal Therapy', cost: '₹450', duration: '60 mins', color: 'var(--primary-light)' },
-      { id: 'T-102', name: 'Teeth Scaling & Polishing', cost: '₹120', duration: '30 mins', color: 'hsl(142, 70%, 95%)' },
-      { id: 'T-103', name: 'Dental Veneers / Crowns', cost: '₹800', duration: '90 mins', color: 'hsl(36, 100%, 95%)' },
-      { id: 'T-104', name: 'Composite Teeth Filling', cost: '₹150', duration: '40 mins', color: 'hsl(325, 75%, 95%)' },
-      { id: 'T-105', name: 'Wisdom Tooth Extraction', cost: '₹300', duration: '60 mins', color: 'hsl(190, 80%, 94%)' }
-    ];
+    const filteredTreatments = treatments.filter((t) => {
+      const term = treatmentsSearchTerm.toLowerCase();
+      return (
+        (t.treatment_code || '').toLowerCase().includes(term) ||
+        (t.treatment_name || '').toLowerCase().includes(term) ||
+        (t.cost || '').toString().includes(term) ||
+        (t.duration || '').toLowerCase().includes(term)
+      );
+    });
+
+    const itemsPerPage = 8;
+    const totalPages = Math.ceil(filteredTreatments.length / itemsPerPage);
+    const startIndex = (treatmentsCurrentPage - 1) * itemsPerPage;
+    const paginatedTreatments = filteredTreatments.slice(startIndex, startIndex + itemsPerPage);
+    const totalEntries = filteredTreatments.length;
+    const displayStart = totalEntries === 0 ? 0 : startIndex + 1;
+    const displayEnd = Math.min(startIndex + itemsPerPage, totalEntries);
 
     return (
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">Treatments & Services</h2>
-          <p className="card-subtitle">Pricing list and service catalogue of Dental ERP.</p>
-        </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div className="card">
+          <div className="card-header-flex">
+            <div>
+              <h2 className="card-title">Treatments & Services</h2>
+              <p className="card-subtitle">Manage service list, pricing, and treatment duration.</p>
+            </div>
+            <div className="header-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div className="search-input-wrapper" style={{ position: 'relative', minWidth: '240px' }}>
+                <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="Search treatments..." 
+                  value={treatmentsSearchTerm}
+                  onChange={(e) => {
+                    setTreatmentsSearchTerm(e.target.value);
+                    setTreatmentsCurrentPage(1);
+                  }}
+                  style={{ paddingLeft: '36px', height: '38px', fontSize: '0.85rem' }}
+                />
+              </div>
+              <button 
+                className="btn btn-primary" 
+                onClick={handleOpenAddTreatmentModal}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontSize: '0.85rem', height: '38px' }}
+              >
+                <Plus size={16} /> Add Treatment
+              </button>
+            </div>
+          </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-          {treatments.map((tr) => (
-            <div key={tr.id} style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{tr.id}</div>
-              <h4 style={{ fontWeight: 600, fontSize: '1.05rem', minHeight: '44px' }}>{tr.name}</h4>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
-                <span style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--text-primary)' }}>{tr.cost}</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{tr.duration}</span>
+          <div className="table-responsive-container" style={{ border: 'none' }}>
+            {filteredTreatments.length === 0 ? (
+              <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                <Activity size={40} style={{ opacity: 0.3 }} />
+                <p>No treatments found.</p>
+              </div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1.5px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    <th style={{ padding: '12px 8px', fontWeight: 600 }}>Code</th>
+                    <th style={{ padding: '12px 8px', fontWeight: 600 }}>Treatment Name</th>
+                    <th style={{ padding: '12px 8px', fontWeight: 600 }}>Cost</th>
+                    <th style={{ padding: '12px 8px', fontWeight: 600 }}>Duration</th>
+                    <th style={{ padding: '12px 8px', fontWeight: 600 }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedTreatments.map((tr) => (
+                    <tr key={tr.id} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}>
+                      <td style={{ padding: '12px 8px', fontWeight: 600, color: 'var(--primary)' }}>{tr.treatment_code}</td>
+                      <td style={{ padding: '12px 8px', fontWeight: 500 }}>{tr.treatment_name}</td>
+                      <td style={{ padding: '12px 8px', fontWeight: 600 }}>₹{parseFloat(tr.cost).toFixed(2)}</td>
+                      <td style={{ padding: '12px 8px' }}>{tr.duration}</td>
+                      <td style={{ padding: '12px 8px' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => handleOpenEditTreatmentModal(tr)}
+                          >
+                            <Pencil size={12} /> Edit
+                          </button>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'hsl(0, 75%, 45%)' }}
+                            onClick={() => handleDeleteTreatment(tr.id, tr.treatment_name)}
+                          >
+                            <Trash2 size={12} /> Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                Showing {displayStart} to {displayEnd} of {totalEntries} entries
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => setTreatmentsCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={treatmentsCurrentPage === 1}
+                  style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}
+                >
+                  <ChevronLeft size={16} /> Previous
+                </button>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => setTreatmentsCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={treatmentsCurrentPage === totalPages}
+                  style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}
+                >
+                  Next <ChevronRight size={16} />
+                </button>
               </div>
             </div>
-          ))}
+          )}
         </div>
+
+        {/* Add Treatment Modal Overlay */}
+        {showAddTreatmentModal && (
+          <div className="modal-backdrop" onClick={() => setShowAddTreatmentModal(false)}>
+            <div className="invoice-modal" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
+              <div className="invoice-modal-header">
+                <h3 style={{ fontWeight: 700, fontSize: '1.15rem' }}>Add New Treatment</h3>
+                <button 
+                  onClick={() => setShowAddTreatmentModal(false)} 
+                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={handleSaveTreatment}>
+                <div className="invoice-modal-body" style={{ gap: '16px' }}>
+                  {addFormError && (
+                    <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: 'hsl(0, 75%, 95%)', color: 'hsl(0, 75%, 45%)', fontSize: '0.85rem', fontWeight: 500 }}>
+                      {addFormError}
+                    </div>
+                  )}
+
+                  <div className="form-group" style={{ gap: '6px' }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Treatment Code (Optional)</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="e.g. T-106 (Auto-generated if left blank)"
+                      value={addFormCode} 
+                      onChange={(e) => setAddFormCode(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ gap: '6px' }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Treatment Name</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="e.g. Teeth Whitening"
+                      value={addFormName} 
+                      onChange={(e) => setAddFormName(e.target.value)}
+                      required 
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ gap: '6px' }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Cost (₹)</label>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      className="form-input" 
+                      placeholder="0.00"
+                      value={addFormCost} 
+                      onChange={(e) => setAddFormCost(e.target.value)}
+                      required 
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ gap: '6px' }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Duration</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="e.g. 30 mins"
+                      value={addFormDuration} 
+                      onChange={(e) => setAddFormDuration(e.target.value)}
+                      required 
+                    />
+                  </div>
+                </div>
+                <div className="invoice-modal-footer">
+                  <button type="button" className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={() => setShowAddTreatmentModal(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }} disabled={isAddingTreatment}>
+                    {isAddingTreatment ? 'Saving...' : 'Add Treatment'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Treatment Modal Overlay */}
+        {showEditTreatmentModal && editingTreatment && (
+          <div className="modal-backdrop" onClick={() => setShowEditTreatmentModal(false)}>
+            <div className="invoice-modal" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
+              <div className="invoice-modal-header">
+                <h3 style={{ fontWeight: 700, fontSize: '1.15rem' }}>Edit Treatment - {editingTreatment.treatment_code}</h3>
+                <button 
+                  onClick={() => setShowEditTreatmentModal(false)} 
+                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={handleUpdateTreatment}>
+                <div className="invoice-modal-body" style={{ gap: '16px' }}>
+                  {editFormTreatmentError && (
+                    <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: 'hsl(0, 75%, 95%)', color: 'hsl(0, 75%, 45%)', fontSize: '0.85rem', fontWeight: 500 }}>
+                      {editFormTreatmentError}
+                    </div>
+                  )}
+
+                  <div className="form-group" style={{ gap: '6px' }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Treatment Name</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={editFormTreatmentName} 
+                      onChange={(e) => setEditFormTreatmentName(e.target.value)}
+                      required 
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ gap: '6px' }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Cost (₹)</label>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      className="form-input" 
+                      value={editFormTreatmentCost} 
+                      onChange={(e) => setEditFormTreatmentCost(e.target.value)}
+                      required 
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ gap: '6px' }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>Duration</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={editFormTreatmentDuration} 
+                      onChange={(e) => setEditFormTreatmentDuration(e.target.value)}
+                      required 
+                    />
+                  </div>
+                </div>
+                <div className="invoice-modal-footer">
+                  <button type="button" className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={() => setShowEditTreatmentModal(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }} disabled={isUpdatingTreatment}>
+                    {isUpdatingTreatment ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -842,9 +1222,9 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
                         required
                       >
                         <option value="">Choose Treatment...</option>
-                        {TREATMENTS.map((t) => (
-                          <option key={t.id} value={t.name}>
-                            {t.name} (₹{t.cost})
+                        {treatments.map((t) => (
+                          <option key={t.id} value={t.treatment_name}>
+                            {t.treatment_name} (₹{parseFloat(t.cost).toFixed(2)})
                           </option>
                         ))}
                       </select>
@@ -945,9 +1325,9 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
                         required
                       >
                         <option value="">Choose Treatment...</option>
-                        {TREATMENTS.map((t) => (
-                          <option key={t.id} value={t.name}>
-                            {t.name} (₹{t.cost})
+                        {treatments.map((t) => (
+                          <option key={t.id} value={t.treatment_name}>
+                            {t.treatment_name} (₹{parseFloat(t.cost).toFixed(2)})
                           </option>
                         ))}
                       </select>

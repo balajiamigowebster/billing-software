@@ -105,6 +105,18 @@ export async function initializeDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
+    // treatments table (NEW)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`treatments\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`treatment_code\` VARCHAR(20) NOT NULL UNIQUE,
+        \`treatment_name\` VARCHAR(100) NOT NULL,
+        \`cost\` DECIMAL(10, 2) NOT NULL,
+        \`duration\` VARCHAR(50) NOT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
     // 5. Seeds
     
     // Seed default doctor if doctors table is empty
@@ -189,6 +201,21 @@ export async function initializeDatabase() {
       }
     }
 
+    // Seed default treatments if treatments table is empty
+    const [treatmentRows] = await pool.query('SELECT COUNT(*) as count FROM treatments');
+    if (treatmentRows[0].count === 0) {
+      await pool.query(`
+        INSERT INTO \`treatments\` (\`treatment_code\`, \`treatment_name\`, \`cost\`, \`duration\`)
+        VALUES 
+          ('T-101', 'Root Canal Therapy', 450.00, '60 mins'),
+          ('T-102', 'Teeth Scaling & Polishing', 120.00, '30 mins'),
+          ('T-103', 'Dental Veneers / Crowns', 800.00, '90 mins'),
+          ('T-104', 'Composite Teeth Filling', 150.00, '40 mins'),
+          ('T-105', 'Wisdom Tooth Extraction', 300.00, '60 mins')
+      `);
+      console.log('Seeded default treatments successfully.');
+    }
+
     console.log('Database and tables initialized successfully!');
     return true;
   } catch (error) {
@@ -217,6 +244,13 @@ const mockDb = {
   appointments: [
     { id: 1, patient_id: 1, doctor_id: 1, appointment_date: '2026-06-15', appointment_time: '10:00 AM', reason: 'Tooth Pain Consult' },
     { id: 2, patient_id: 2, doctor_id: 1, appointment_date: '2026-06-15', appointment_time: '11:30 AM', reason: 'Dental Crown' }
+  ],
+  treatments: [
+    { id: 1, treatment_code: 'T-101', treatment_name: 'Root Canal Therapy', cost: 450.00, duration: '60 mins' },
+    { id: 2, treatment_code: 'T-102', treatment_name: 'Teeth Scaling & Polishing', cost: 120.00, duration: '30 mins' },
+    { id: 3, treatment_code: 'T-103', treatment_name: 'Dental Veneers / Crowns', cost: 800.00, duration: '90 mins' },
+    { id: 4, treatment_code: 'T-104', treatment_name: 'Composite Teeth Filling', cost: 150.00, duration: '40 mins' },
+    { id: 5, treatment_code: 'T-105', treatment_name: 'Wisdom Tooth Extraction', cost: 300.00, duration: '60 mins' }
   ]
 };
 
@@ -235,6 +269,9 @@ async function mockQuery(sql, params = []) {
   }
   if (normalizedSql.includes('select count(*) as count from appointments')) {
     return [[{ count: mockDb.appointments.length }]];
+  }
+  if (normalizedSql.includes('select count(*) as count from treatments')) {
+    return [[{ count: mockDb.treatments.length }]];
   }
 
   // 1. Fetch patients
@@ -381,6 +418,50 @@ async function mockQuery(sql, params = []) {
       initials: params[2] || 'DA'
     });
     return [{ insertId: nextId }];
+  }
+
+  // 13. Treatments mock queries
+  if (normalizedSql.includes('select * from treatments') || normalizedSql.includes('from treatments')) {
+    const list = mockDb.treatments.map(t => ({
+      ...t,
+      cost: parseFloat(t.cost)
+    }));
+    return [list];
+  }
+
+  if (normalizedSql.includes('insert into treatments') || normalizedSql.includes('insert into `treatments`')) {
+    const nextId = mockDb.treatments.length > 0 ? Math.max(...mockDb.treatments.map(t => t.id)) + 1 : 1;
+    const newTreatment = {
+      id: nextId,
+      treatment_code: params[0],
+      treatment_name: params[1],
+      cost: parseFloat(params[2]),
+      duration: params[3]
+    };
+    mockDb.treatments.push(newTreatment);
+    return [{ insertId: nextId }];
+  }
+
+  if (normalizedSql.includes('update treatments') || normalizedSql.includes('update `treatments`')) {
+    const id = parseInt(params[params.length - 1], 10);
+    const treatment = mockDb.treatments.find(t => t.id === id);
+    if (treatment) {
+      treatment.treatment_name = params[0];
+      treatment.cost = parseFloat(params[1]);
+      treatment.duration = params[2];
+      return [{ affectedRows: 1 }];
+    }
+    return [{ affectedRows: 0 }];
+  }
+
+  if (normalizedSql.includes('delete from treatments') || normalizedSql.includes('delete from `treatments`')) {
+    const id = parseInt(params[0], 10);
+    const idx = mockDb.treatments.findIndex(t => t.id === id);
+    if (idx !== -1) {
+      mockDb.treatments.splice(idx, 1);
+      return [{ affectedRows: 1 }];
+    }
+    return [{ affectedRows: 0 }];
   }
 
   return [[]];

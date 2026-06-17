@@ -342,6 +342,94 @@ app.put('/api/invoices/:id', async (req, res) => {
   }
 });
 
+// GET: Fetch all treatments
+app.get('/api/treatments', async (req, res) => {
+  try {
+    const pool = getPool();
+    const [rows] = await pool.query('SELECT * FROM treatments ORDER BY treatment_code ASC');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching treatments:', error);
+    res.status(500).json({ error: 'Failed to fetch treatments list' });
+  }
+});
+
+// POST: Register a new treatment
+app.post('/api/treatments', async (req, res) => {
+  const { treatmentCode, treatmentName, cost, duration } = req.body;
+  if (!treatmentName || cost === undefined || !duration) {
+    return res.status(400).json({ error: 'Missing mandatory treatment fields' });
+  }
+  try {
+    const pool = getPool();
+    
+    let finalCode = treatmentCode;
+    if (!finalCode) {
+      const [rows] = await pool.query('SELECT treatment_code FROM treatments WHERE treatment_code LIKE ? ORDER BY id DESC LIMIT 1', ['T-%']);
+      let nextNum = 101;
+      if (rows.length > 0) {
+        const lastCode = rows[0].treatment_code;
+        const lastNumStr = lastCode.split('-')[1];
+        nextNum = parseInt(lastNumStr, 10) + 1;
+      }
+      finalCode = `T-${nextNum}`;
+    }
+
+    const query = `
+      INSERT INTO treatments (treatment_code, treatment_name, cost, duration)
+      VALUES (?, ?, ?, ?)
+    `;
+    await pool.query(query, [finalCode, treatmentName, parseFloat(cost), duration]);
+    res.status(201).json({ success: true, message: 'Treatment registered successfully!' });
+  } catch (error) {
+    console.error('Error creating treatment:', error);
+    res.status(500).json({ error: 'Failed to create treatment' });
+  }
+});
+
+// PUT: Update an existing treatment
+app.put('/api/treatments/:id', async (req, res) => {
+  const { id } = req.params;
+  const { treatmentName, cost, duration } = req.body;
+  if (!treatmentName || cost === undefined || !duration) {
+    return res.status(400).json({ error: 'Missing mandatory treatment fields' });
+  }
+  try {
+    const pool = getPool();
+    const query = `
+      UPDATE treatments
+      SET treatment_name = ?, cost = ?, duration = ?
+      WHERE id = ?
+    `;
+    const [result] = await pool.query(query, [treatmentName, parseFloat(cost), duration, parseInt(id, 10)]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Treatment not found' });
+    }
+    res.json({ success: true, message: 'Treatment updated successfully!' });
+  } catch (error) {
+    console.error('Error updating treatment:', error);
+    res.status(500).json({ error: 'Failed to update treatment' });
+  }
+});
+
+// DELETE: Delete a treatment
+app.delete('/api/treatments/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const pool = getPool();
+    const query = 'DELETE FROM treatments WHERE id = ?';
+    const [result] = await pool.query(query, [parseInt(id, 10)]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Treatment not found' });
+    }
+    res.json({ success: true, message: 'Treatment deleted successfully!' });
+  } catch (error) {
+    console.error('Error deleting treatment:', error);
+    res.status(500).json({ error: 'Failed to delete treatment' });
+  }
+});
+
 // 7. GET: Fetch all appointments for a specific date
 app.get('/api/appointments', async (req, res) => {
   const { date } = req.query;
