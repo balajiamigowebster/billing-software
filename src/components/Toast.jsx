@@ -10,11 +10,16 @@ export default function Toast({ message, type = 'success', onClose, duration = 4
   }, [onClose, duration]);
 
   return (
-    <div className="toast">
+    <div 
+      className="toast" 
+      style={{ 
+        borderLeft: type === 'success' ? '4px solid hsl(142, 76%, 36%)' : '4px solid hsl(0, 84%, 60%)' 
+      }}
+    >
       {type === 'success' ? (
-        <CheckCircle2 size={18} color="#2563eb" />
+        <CheckCircle2 size={18} color="hsl(142, 76%, 45%)" />
       ) : (
-        <AlertCircle size={18} color="#ef4444" />
+        <AlertCircle size={18} color="hsl(0, 84%, 60%)" />
       )}
       <div style={{ flexGrow: 1 }}>{message}</div>
       <button 

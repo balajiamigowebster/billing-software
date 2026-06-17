@@ -36,7 +36,7 @@ const formatDate = (dateStr) => {
   return `${months[monthIdx]} ${day}, ${year}`;
 };
 
-export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
+export default function MockDashboard({ tab, onNavigate, onPrintInvoice, showToast }) {
   const [patients, setPatients] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [patientsList, setPatientsList] = useState([]);
@@ -208,6 +208,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
 
       setShowCreateModal(false);
       fetchInvoices();
+      if (showToast) showToast('Invoice created successfully!');
     } catch (err) {
       console.error('Error saving invoice:', err);
       setFormError('Failed to save invoice to database.');
@@ -265,6 +266,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
 
       setShowEditModal(false);
       fetchInvoices();
+      if (showToast) showToast('Invoice updated successfully!');
     } catch (err) {
       console.error('Error updating invoice:', err);
       setEditFormError('Failed to update invoice in database.');
@@ -318,6 +320,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
       }
       setShowAddTreatmentModal(false);
       fetchTreatments();
+      if (showToast) showToast('Treatment added successfully!');
     } catch (err) {
       console.error('Error saving treatment:', err);
       setAddFormError('Failed to save treatment to database.');
@@ -358,6 +361,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
       }
       setShowEditTreatmentModal(false);
       fetchTreatments();
+      if (showToast) showToast('Treatment updated successfully!');
     } catch (err) {
       console.error('Error updating treatment:', err);
       setEditFormTreatmentError('Failed to update treatment in database.');
@@ -386,6 +390,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
       setShowDeleteTreatmentModal(false);
       setDeletingTreatment(null);
       fetchTreatments();
+      if (showToast) showToast('Treatment deleted successfully!');
     } catch (err) {
       console.error('Error deleting treatment:', err);
       setDeleteTreatmentError('Failed to delete treatment from database.');
@@ -440,6 +445,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice }) {
 
       setShowBookModal(false);
       fetchAppointments(selectedDate);
+      if (showToast) showToast('Appointment scheduled successfully!');
     } catch (err) {
       console.error('Error booking appointment:', err);
       setBookError('Failed to save appointment to database.');

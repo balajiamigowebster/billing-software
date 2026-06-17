@@ -45,6 +45,13 @@ export default function App() {
     setActiveTab('patient-list');
   };
 
+  const showToast = (message, type = 'success') => {
+    setToast({
+      message,
+      type
+    });
+  };
+
   const handleCloseToast = () => {
     setToast(null);
   };
@@ -121,7 +128,7 @@ export default function App() {
             onSaveSuccess={handleSaveSuccess}
           />
         ) : (
-          <MockDashboard tab={activeTab} onNavigate={handleNavigate} onPrintInvoice={setActiveInvoice} />
+          <MockDashboard tab={activeTab} onNavigate={handleNavigate} onPrintInvoice={setActiveInvoice} showToast={showToast} />
         )}
       </main>
 
