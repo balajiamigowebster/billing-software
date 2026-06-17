@@ -181,6 +181,41 @@ LOCK TABLES `visits` WRITE;
 INSERT INTO `visits` VALUES (1,1,1,'Consultation','2026-06-15 04:52:09'),(2,2,1,'tooth pain','2026-06-15 04:57:19');
 /*!40000 ALTER TABLE `visits` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Table structure for table `treatments`
+--
+
+DROP TABLE IF EXISTS `treatments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `treatments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `treatment_code` varchar(20) NOT NULL,
+  `treatment_name` varchar(100) NOT NULL,
+  `cost` decimal(10,2) NOT NULL,
+  `duration` varchar(50) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `treatment_code` (`treatment_code`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `treatments`
+--
+
+LOCK TABLES `treatments` WRITE;
+/*!40000 ALTER TABLE `treatments` DISABLE KEYS */;
+INSERT INTO `treatments` VALUES 
+(1,'T-101','Root Canal Therapy',450.00,'60 mins',current_timestamp()),
+(2,'T-102','Teeth Scaling & Polishing',120.00,'30 mins',current_timestamp()),
+(3,'T-103','Dental Veneers / Crowns',800.00,'90 mins',current_timestamp()),
+(4,'T-104','Composite Teeth Filling',150.00,'40 mins',current_timestamp()),
+(5,'T-105','Wisdom Tooth Extraction',300.00,'60 mins',current_timestamp());
+/*!40000 ALTER TABLE `treatments` ENABLE KEYS */;
+UNLOCK TABLES;
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
