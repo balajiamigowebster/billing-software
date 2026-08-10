@@ -116,16 +116,22 @@ export default function PatientList({ onNavigate, openRegisterModal, onCloseRegi
           body: JSON.stringify(editFormData)
         });
 
-        const data = await response.json();
-
         if (response.ok) {
+          const data = await response.json();
           if (onSaveSuccess) {
             onSaveSuccess(`Patient ${editFormData.patientName} updated successfully!`);
           }
           setEditingPatient(null);
           fetchPatients();
         } else {
-          setEditApiError(data.error || 'Server error, update failed.');
+          let errorMsg = 'Server error, update failed.';
+          try {
+            const data = await response.json();
+            errorMsg = data.error || errorMsg;
+          } catch (e) {
+            errorMsg = `Server error ${response.status}: ${response.statusText || 'Not Found'}`;
+          }
+          setEditApiError(errorMsg);
         }
       } catch (error) {
         console.error('Network error updating patient:', error);
