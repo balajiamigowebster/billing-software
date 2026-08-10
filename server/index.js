@@ -215,6 +215,62 @@ app.post('/api/patients', async (req, res) => {
   }
 });
 
+// 3b. PUT: Update an existing patient's details
+app.put('/api/patients/:id', async (req, res) => {
+  const { id } = req.params;
+  const {
+    patientName,
+    mobileNumber,
+    age,
+    gender,
+    email,
+    pincode,
+    city,
+    address
+  } = req.body;
+
+  // Simple validation
+  if (!patientName || !mobileNumber || !age || !gender) {
+    return res.status(400).json({ error: 'Missing mandatory patient fields' });
+  }
+
+  try {
+    const pool = getPool();
+    const query = `
+      UPDATE patients 
+      SET patient_name = ?, 
+          mobile_number = ?, 
+          age = ?, 
+          gender = ?, 
+          email = ?, 
+          pincode = ?, 
+          city = ?, 
+          address = ?
+      WHERE id = ?
+    `;
+    const [result] = await pool.query(query, [
+      patientName,
+      mobileNumber,
+      parseInt(age),
+      gender,
+      email || null,
+      pincode || null,
+      city || null,
+      address || null,
+      id
+    ]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Patient not found' });
+    }
+
+    res.json({ message: 'Patient updated successfully' });
+  } catch (error) {
+    console.error('Error updating patient:', error);
+    res.status(500).json({ error: 'Failed to update patient records' });
+  }
+});
+
 // 4. GET: Fetch all invoices joined with patient name and sequence ID
 app.get('/api/invoices', async (req, res) => {
   try {

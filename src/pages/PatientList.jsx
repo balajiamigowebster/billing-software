@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, X, Printer, User, Phone, MapPin, Stethoscope, AlertTriangle, Loader2, Plus, Calendar } from 'lucide-react';
+import { Search, Eye, X, Printer, User, Phone, MapPin, Stethoscope, AlertTriangle, Loader2, Plus, Calendar, Pencil } from 'lucide-react';
 import PatientRegistry from './PatientRegistry';
+import FormInput from '../components/FormInput';
+import FormSelect from '../components/FormSelect';
 import { API_BASE } from '../config';
 
 const formatDate = (dateStr) => {
@@ -21,6 +23,118 @@ export default function PatientList({ onNavigate, openRegisterModal, onCloseRegi
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+
+  // Edit Patient state variables
+  const [editingPatient, setEditingPatient] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    patientName: '',
+    mobileNumber: '',
+    age: '',
+    gender: '',
+    email: '',
+    pincode: '',
+    city: '',
+    address: ''
+  });
+  const [editErrors, setEditErrors] = useState({});
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editApiError, setEditApiError] = useState(null);
+
+  // Populate edit form details when editingPatient state changes
+  useEffect(() => {
+    if (editingPatient) {
+      setEditFormData({
+        patientName: editingPatient.patient_name || '',
+        mobileNumber: editingPatient.mobile_number || '',
+        age: editingPatient.age || '',
+        gender: editingPatient.gender || '',
+        email: editingPatient.email || '',
+        pincode: editingPatient.pincode || '',
+        city: editingPatient.city || '',
+        address: editingPatient.address || ''
+      });
+      setEditErrors({});
+      setEditApiError(null);
+    }
+  }, [editingPatient]);
+
+  const handleEditChange = (e) => {
+    const { id, value } = e.target;
+    setEditFormData((prev) => ({
+      ...prev,
+      [id]: value
+    }));
+    
+    // Clear error for this field
+    if (editErrors[id]) {
+      setEditErrors((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }
+  };
+
+  const validateEdit = () => {
+    const newErrors = {};
+    if (!editFormData.patientName.trim()) {
+      newErrors.patientName = 'Patient Name is required';
+    }
+    if (!editFormData.mobileNumber.trim()) {
+      newErrors.mobileNumber = 'Mobile Number is required';
+    } else if (!/^\d{10}$/.test(editFormData.mobileNumber.trim())) {
+      newErrors.mobileNumber = 'Mobile Number must be 10 digits';
+    }
+    if (!editFormData.age) {
+      newErrors.age = 'Age is required';
+    } else if (isNaN(editFormData.age) || parseInt(editFormData.age) <= 0) {
+      newErrors.age = 'Enter a valid age';
+    }
+    if (!editFormData.gender) {
+      newErrors.gender = 'Gender is required';
+    }
+    if (editFormData.email && !/\S+@\S+\.\S+/.test(editFormData.email)) {
+      newErrors.email = 'Enter a valid email address';
+    }
+    setEditErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (isSavingEdit) return;
+
+    if (validateEdit()) {
+      setIsSavingEdit(true);
+      setEditApiError(null);
+      try {
+        const response = await fetch(`${API_BASE}/api/patients/${editingPatient.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(editFormData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          if (onSaveSuccess) {
+            onSaveSuccess(`Patient ${editFormData.patientName} updated successfully!`);
+          }
+          setEditingPatient(null);
+          fetchPatients();
+        } else {
+          setEditApiError(data.error || 'Server error, update failed.');
+        }
+      } catch (error) {
+        console.error('Network error updating patient:', error);
+        setEditApiError('Network connection failed. Make sure the database backend server is running!');
+      } finally {
+        setIsSavingEdit(false);
+      }
+    }
+  };
 
   useEffect(() => {
     if (openRegisterModal) {
@@ -172,7 +286,17 @@ export default function PatientList({ onNavigate, openRegisterModal, onCloseRegi
                           <span style={{ color: 'var(--text-muted)' }}>—</span>
                         )}
                       </td>
-                      <td style={{ padding: '14px', textAlign: 'right' }}>
+                      <td style={{ padding: '14px', textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <button 
+                          className="btn btn-secondary" 
+                          style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'inline-flex', gap: '6px', borderRadius: '6px' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingPatient(patient);
+                          }}
+                        >
+                          <Pencil size={14} /> Edit
+                        </button>
                         <button 
                           className="btn btn-secondary" 
                           style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'inline-flex', gap: '6px', borderRadius: '6px' }}
@@ -362,6 +486,12 @@ export default function PatientList({ onNavigate, openRegisterModal, onCloseRegi
               gap: '12px',
               backgroundColor: 'var(--bg-input)'
             }}>
+              <button className="btn btn-secondary" style={{ flexGrow: 1 }} onClick={() => {
+                setEditingPatient(selectedPatient);
+                setSelectedPatient(null);
+              }}>
+                <Pencil size={16} /> Edit Profile
+              </button>
               <button className="btn btn-secondary" style={{ flexGrow: 1 }} onClick={() => window.print()}>
                 <Printer size={16} /> Print Chart
               </button>
@@ -398,6 +528,148 @@ export default function PatientList({ onNavigate, openRegisterModal, onCloseRegi
                   fetchPatients();
                 }}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Patient Edit Modal Overlay */}
+      {editingPatient && (
+        <div className="modal-backdrop" onClick={() => setEditingPatient(null)}>
+          <div className="invoice-modal" style={{ maxWidth: '750px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="invoice-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)', backgroundColor: 'var(--primary-light)', padding: '4px 8px', borderRadius: '6px' }}>
+                  {editingPatient.patient_id_seq}
+                </span>
+                <h3 style={{ fontWeight: 700, fontSize: '1.15rem' }}>Edit Patient Profile</h3>
+              </div>
+              <button 
+                onClick={() => setEditingPatient(null)} 
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="invoice-modal-body">
+              <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {editApiError && (
+                  <div style={{ padding: '16px', borderRadius: '10px', backgroundColor: 'hsl(0, 75%, 95%)', color: 'hsl(0, 75%, 45%)', fontWeight: 600, fontSize: '0.9rem', border: '1px solid hsl(0, 75%, 90%)' }}>
+                    {editApiError}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="form-grid">
+                    <FormInput
+                      label="Patient Name"
+                      id="patientName"
+                      value={editFormData.patientName}
+                      onChange={handleEditChange}
+                      placeholder="Arjun Kumar"
+                      error={editErrors.patientName}
+                      disabled={isSavingEdit}
+                    />
+                    <FormInput
+                      label="Mobile Number"
+                      id="mobileNumber"
+                      value={editFormData.mobileNumber}
+                      onChange={handleEditChange}
+                      placeholder="9876543210"
+                      error={editErrors.mobileNumber}
+                      type="tel"
+                      disabled={isSavingEdit}
+                    />
+                    <FormInput
+                      label="Age"
+                      id="age"
+                      value={editFormData.age}
+                      onChange={handleEditChange}
+                      placeholder="30"
+                      error={editErrors.age}
+                      type="number"
+                      disabled={isSavingEdit}
+                    />
+                    <FormSelect
+                      label="Gender"
+                      id="gender"
+                      value={editFormData.gender}
+                      onChange={handleEditChange}
+                      options={[
+                        { value: '', label: 'Select Gender', disabled: true },
+                        { value: 'male', label: 'Male' },
+                        { value: 'female', label: 'Female' },
+                        { value: 'other', label: 'Other' }
+                      ]}
+                      error={editErrors.gender}
+                      disabled={isSavingEdit}
+                    />
+                    <FormInput
+                      label="Email"
+                      id="email"
+                      value={editFormData.email}
+                      onChange={handleEditChange}
+                      placeholder="patient@gmail.com"
+                      error={editErrors.email}
+                      type="email"
+                      disabled={isSavingEdit}
+                    />
+                    <FormInput
+                      label="Pincode"
+                      id="pincode"
+                      value={editFormData.pincode}
+                      onChange={handleEditChange}
+                      placeholder="600001"
+                      error={editErrors.pincode}
+                      disabled={isSavingEdit}
+                    />
+                    <FormInput
+                      label="City"
+                      id="city"
+                      value={editFormData.city}
+                      onChange={handleEditChange}
+                      placeholder="Chennai"
+                      error={editErrors.city}
+                      disabled={isSavingEdit}
+                    />
+                    <FormInput
+                      label="Address"
+                      id="address"
+                      value={editFormData.address}
+                      onChange={handleEditChange}
+                      placeholder="Address"
+                      error={editErrors.address}
+                      disabled={isSavingEdit}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '20px', marginTop: '10px' }}>
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    onClick={() => setEditingPatient(null)}
+                    disabled={isSavingEdit}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary" 
+                    disabled={isSavingEdit}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    {isSavingEdit ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
