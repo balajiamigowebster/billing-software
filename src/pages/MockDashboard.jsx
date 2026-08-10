@@ -108,6 +108,12 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice, showToa
   const [deleteTreatmentError, setDeleteTreatmentError] = useState('');
   const [isDeletingTreatment, setIsDeletingTreatment] = useState(false);
 
+  // Delete Invoice Confirmation States
+  const [showDeleteInvoiceModal, setShowDeleteInvoiceModal] = useState(false);
+  const [deletingInvoice, setDeletingInvoice] = useState(null);
+  const [deleteInvoiceError, setDeleteInvoiceError] = useState('');
+  const [isDeletingInvoice, setIsDeletingInvoice] = useState(false);
+
   const fetchTreatments = () => {
     fetch(`${API_BASE}/api/treatments`)
       .then((res) => res.json())
@@ -396,6 +402,39 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice, showToa
       setDeleteTreatmentError('Failed to delete treatment from database.');
     } finally {
       setIsDeletingTreatment(false);
+    }
+  };
+
+  const handleOpenDeleteInvoiceModal = (invoice) => {
+    setDeletingInvoice(invoice);
+    setDeleteInvoiceError('');
+    setShowDeleteInvoiceModal(true);
+  };
+
+  const handleConfirmDeleteInvoice = async () => {
+    if (!deletingInvoice) return;
+    setIsDeletingInvoice(true);
+    setDeleteInvoiceError('');
+
+    try {
+      const response = await fetch(`${API_BASE}/api/invoices/${deletingInvoice.id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete invoice.');
+      }
+
+      setShowDeleteInvoiceModal(false);
+      fetchInvoices();
+      if (showToast) {
+        showToast(`Invoice ${deletingInvoice.invoice_no} deleted successfully!`);
+      }
+    } catch (error) {
+      console.error('Error deleting invoice:', error);
+      setDeleteInvoiceError('Failed to delete invoice from database.');
+    } finally {
+      setIsDeletingInvoice(false);
     }
   };
 
@@ -1225,6 +1264,13 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice, showToa
                           >
                             <Printer size={12} /> Print
                           </button>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => handleOpenDeleteInvoiceModal(inv)}
+                          >
+                            <Trash2 size={12} style={{ color: 'hsl(0, 84%, 60%)' }} /> <span style={{ color: 'hsl(0, 84%, 60%)' }}>Delete</span>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1482,6 +1528,69 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice, showToa
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Invoice Confirmation Modal Overlay */}
+        {showDeleteInvoiceModal && deletingInvoice && (
+          <div className="modal-backdrop" onClick={() => setShowDeleteInvoiceModal(false)}>
+            <div className="invoice-modal" style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
+              <div className="invoice-modal-header" style={{ borderBottom: 'none', padding: '24px 24px 8px 24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: 'hsl(0, 100%, 96%)',
+                    color: 'hsl(0, 84%, 60%)'
+                  }}>
+                    <Trash2 size={20} />
+                  </div>
+                  <h3 style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--text-primary)' }}>Delete Invoice?</h3>
+                </div>
+                <button 
+                  onClick={() => setShowDeleteInvoiceModal(false)} 
+                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="invoice-modal-body" style={{ gap: '12px', padding: '8px 24px 24px 24px', overflowY: 'visible' }}>
+                {deleteInvoiceError && (
+                  <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: 'hsl(0, 75%, 95%)', color: 'hsl(0, 75%, 45%)', fontSize: '0.85rem', fontWeight: 500 }}>
+                    {deleteInvoiceError}
+                  </div>
+                )}
+                <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: 0 }}>
+                  Are you sure you want to delete invoice <strong style={{ color: 'var(--text-primary)' }}>{deletingInvoice.invoice_no}</strong> for patient <strong style={{ color: 'var(--text-primary)' }}>{deletingInvoice.patient_name}</strong>? This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="invoice-modal-footer" style={{ borderTop: 'none', padding: '16px 24px 24px 24px', backgroundColor: 'transparent' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }} 
+                  onClick={() => setShowDeleteInvoiceModal(false)}
+                  disabled={isDeletingInvoice}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-danger" 
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }} 
+                  onClick={handleConfirmDeleteInvoice}
+                  disabled={isDeletingInvoice}
+                >
+                  {isDeletingInvoice ? 'Deleting...' : 'Delete Invoice'}
+                </button>
+              </div>
             </div>
           </div>
         )}

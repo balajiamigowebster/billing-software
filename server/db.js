@@ -473,6 +473,16 @@ async function mockQuery(sql, params = []) {
     return [{ affectedRows: 0 }];
   }
 
+  if (normalizedSql.includes('delete from invoices') || normalizedSql.includes('delete from `invoices`')) {
+    const id = parseInt(params[0], 10);
+    const idx = mockDb.invoices.findIndex(inv => inv.id === id);
+    if (idx !== -1) {
+      mockDb.invoices.splice(idx, 1);
+      return [{ affectedRows: 1 }];
+    }
+    return [{ affectedRows: 0 }];
+  }
+
   return [[]];
 }
 

@@ -399,6 +399,25 @@ app.put('/api/invoices/:id', async (req, res) => {
   }
 });
 
+// 6b. DELETE: Delete an invoice
+app.delete('/api/invoices/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const pool = getPool();
+    const query = 'DELETE FROM invoices WHERE id = ?';
+    const [result] = await pool.query(query, [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    res.json({ success: true, message: 'Invoice deleted successfully!' });
+  } catch (error) {
+    console.error('Error deleting invoice:', error);
+    res.status(500).json({ error: 'Failed to delete invoice' });
+  }
+});
+
 // GET: Fetch all treatments
 app.get('/api/treatments', async (req, res) => {
   try {
