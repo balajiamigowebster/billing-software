@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS `doctors` (
 
 -- Seed Doctor Data (matching profile in sidebar footer)
 INSERT INTO `doctors` (`doctor_name`, `email`, `initials`)
-VALUES ('Dr. Arun, MDS', 'arun@rangasdental.com', 'AA')
+VALUES ('Dr.Arun , MDS', 'arun@rangasdental.com', 'AA')
 ON DUPLICATE KEY UPDATE `doctor_name` = VALUES(`doctor_name`);
 
 -- --------------------------------------------------------
@@ -127,7 +127,7 @@ VALUES
 (2, 'PAT-0002', 'Nandini Iyer', '9876543211', 28, 'female', 'nandini@gmail.com', '600002', 'Chennai', 'Address')
 ON DUPLICATE KEY UPDATE `patient_name` = VALUES(`patient_name`);
 
--- 2. Insert Visit for "Arjun Kumar" (PAT-0001) visiting "Dr. Arun, MDS"
+-- 2. Insert Visit for "Arjun Kumar" (PAT-0001) visiting "Dr.Arun , MDS"
 INSERT INTO `visits` (`id`, `patient_id`, `doctor_id`, `chief_complaint`)
 VALUES (1, 1, 1, 'Tooth pain, swelling, sensitivity...')
 ON DUPLICATE KEY UPDATE `chief_complaint` = VALUES(`chief_complaint`);

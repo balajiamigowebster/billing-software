@@ -9,7 +9,7 @@ export default function PatientRegistry({ onSaveSuccess, isModal = false, onCanc
   const [isLoadingId, setIsLoadingId] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [apiError, setApiError] = useState(null);
-  const [doctorsList, setDoctorsList] = useState([{ id: 1, doctor_name: 'Dr. Arun, MDS' }]);
+  const [doctorsList, setDoctorsList] = useState([{ id: 1, doctor_name: 'Dr.Arun , MDS' }]);
 
   const initialFormState = {
     patientName: '',
@@ -20,11 +20,11 @@ export default function PatientRegistry({ onSaveSuccess, isModal = false, onCanc
     pincode: '',
     city: '',
     address: '',
-    doctorName: 'Dr. Arun, MDS',
+    doctorName: 'Dr.Arun , MDS',
     chiefComplaint: '',
     nextAppointmentDate: '',
     nextAppointmentTime: '',
-    appointmentDoctorName: 'Dr. Arun, MDS'
+    appointmentDoctorName: 'Dr.Arun , MDS'
   };
 
   const [formData, setFormData] = useState(initialFormState);

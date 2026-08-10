@@ -140,7 +140,7 @@ app.post('/api/patients', async (req, res) => {
 
     const patientTableId = patientResult.insertId;
 
-    // 2. Resolve Doctor ID (default to Dr. Arun, MDS if not found)
+    // 2. Resolve Doctor ID (default to Dr.Arun , MDS if not found)
     const [doctorRows] = await connection.query(
       'SELECT id FROM doctors WHERE doctor_name LIKE ? OR email = ? LIMIT 1',
       [`%${doctorName}%`, 'arun@rangasdental.com']
@@ -522,7 +522,7 @@ app.post('/api/appointments', async (req, res) => {
   try {
     const pool = getPool();
 
-    // Resolve Doctor ID (default to Dr. Arun, MDS if not found)
+    // Resolve Doctor ID (default to Dr.Arun , MDS if not found)
     const [doctorRows] = await pool.query(
       'SELECT id FROM doctors WHERE doctor_name LIKE ? OR email = ? LIMIT 1',
       [`%${doctorName}%`, 'arun@rangasdental.com']

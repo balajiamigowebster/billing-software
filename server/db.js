@@ -124,16 +124,16 @@ export async function initializeDatabase() {
     if (doctorRows[0].count === 0) {
       await pool.query(`
         INSERT INTO \`doctors\` (\`doctor_name\`, \`email\`, \`initials\`)
-        VALUES ('Dr. Arun, MDS', 'arun@rangasdental.com', 'AA')
+        VALUES ('Dr.Arun , MDS', 'arun@rangasdental.com', 'AA')
       `);
       console.log('Seeded default doctor successfully.');
     } else {
       await pool.query(`
         UPDATE \`doctors\` 
-        SET \`doctor_name\` = 'Dr. Arun, MDS', \`email\` = 'arun@rangasdental.com', \`initials\` = 'AA' 
+        SET \`doctor_name\` = 'Dr.Arun , MDS', \`email\` = 'arun@rangasdental.com', \`initials\` = 'AA' 
         WHERE \`id\` = 1
       `);
-      console.log('Updated default doctor to Dr. Arun, MDS.');
+      console.log('Updated default doctor to Dr.Arun , MDS.');
     }
 
     // Seed default patients if patients table is empty
@@ -235,7 +235,7 @@ export async function initializeDatabase() {
 // In-Memory Database Fallback for development/cloud deployment sandboxes
 const mockDb = {
   doctors: [
-    { id: 1, doctor_name: 'Dr. Arun, MDS', email: 'arun@rangasdental.com', initials: 'AA' }
+    { id: 1, doctor_name: 'Dr.Arun , MDS', email: 'arun@rangasdental.com', initials: 'AA' }
   ],
   patients: [
     { id: 1, patient_id_seq: 'PAT-0001', patient_name: 'Arjun Kumar', mobile_number: '9876543210', age: 30, gender: 'male', email: 'patient@gmail.com', pincode: '600001', city: 'Chennai', address: 'Address' },
@@ -288,7 +288,7 @@ async function mockQuery(sql, params = []) {
       return {
         ...p,
         chief_complaint: visit ? visit.chief_complaint : 'Consultation',
-        doctor_name: 'Dr. Arun, MDS'
+        doctor_name: 'Dr.Arun , MDS'
       };
     });
     return [rows];
@@ -422,7 +422,7 @@ async function mockQuery(sql, params = []) {
     const nextId = mockDb.doctors.length + 1;
     mockDb.doctors.push({
       id: nextId,
-      doctor_name: params[0] || 'Dr. Arun, MDS',
+      doctor_name: params[0] || 'Dr.Arun , MDS',
       email: params[1] || 'arun@rangasdental.com',
       initials: params[2] || 'AA'
     });
