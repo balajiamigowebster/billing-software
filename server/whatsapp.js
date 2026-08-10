@@ -30,7 +30,7 @@ export async function sendWhatsAppNotification(patientName, mobileNumber, date, 
     }
   }
 
-  const messageBody = `Hello ${patientName}, your dental appointment with Dr. Arjun Sharma is scheduled for ${date} at ${time}. Reason: ${reason}. Thank you for choosing Dental ERP Clinic!`;
+  const messageBody = `Hello ${patientName}, your dental appointment with Dr. Arun, MDS is scheduled for ${date} at ${time}. Reason: ${reason}. Thank you for choosing Ranga's Dental Clinic!`;
 
   console.log('\n--- 📱 WHATSAPP NOTIFICATION TRIGGERED ---');
   console.log(`To: ${formattedMobile}`);

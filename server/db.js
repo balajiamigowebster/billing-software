@@ -124,9 +124,16 @@ export async function initializeDatabase() {
     if (doctorRows[0].count === 0) {
       await pool.query(`
         INSERT INTO \`doctors\` (\`doctor_name\`, \`email\`, \`initials\`)
-        VALUES ('Dr. Arjun Sharma', 'arjun.sharma@dentalerp.com', 'DA')
+        VALUES ('Dr. Arun, MDS', 'arun@rangasdental.com', 'AA')
       `);
       console.log('Seeded default doctor successfully.');
+    } else {
+      await pool.query(`
+        UPDATE \`doctors\` 
+        SET \`doctor_name\` = 'Dr. Arun, MDS', \`email\` = 'arun@rangasdental.com', \`initials\` = 'AA' 
+        WHERE \`id\` = 1
+      `);
+      console.log('Updated default doctor to Dr. Arun, MDS.');
     }
 
     // Seed default patients if patients table is empty
@@ -228,7 +235,7 @@ export async function initializeDatabase() {
 // In-Memory Database Fallback for development/cloud deployment sandboxes
 const mockDb = {
   doctors: [
-    { id: 1, doctor_name: 'Dr. Arjun Sharma', email: 'arjun.sharma@dentalerp.com', initials: 'DA' }
+    { id: 1, doctor_name: 'Dr. Arun, MDS', email: 'arun@rangasdental.com', initials: 'AA' }
   ],
   patients: [
     { id: 1, patient_id_seq: 'PAT-0001', patient_name: 'Arjun Kumar', mobile_number: '9876543210', age: 30, gender: 'male', email: 'patient@gmail.com', pincode: '600001', city: 'Chennai', address: 'Address' },
@@ -281,7 +288,7 @@ async function mockQuery(sql, params = []) {
       return {
         ...p,
         chief_complaint: visit ? visit.chief_complaint : 'Consultation',
-        doctor_name: 'Dr. Arjun Sharma'
+        doctor_name: 'Dr. Arun, MDS'
       };
     });
     return [rows];
@@ -344,7 +351,9 @@ async function mockQuery(sql, params = []) {
       return {
         ...i,
         patient_name: patient.patient_name || 'Unknown',
-        patient_id_seq: patient.patient_id_seq || 'PAT-0000'
+        patient_id_seq: patient.patient_id_seq || 'PAT-0000',
+        age: patient.age || '—',
+        gender: patient.gender || '—'
       };
     }).sort((a, b) => b.id - a.id);
     return [rows];
@@ -413,9 +422,9 @@ async function mockQuery(sql, params = []) {
     const nextId = mockDb.doctors.length + 1;
     mockDb.doctors.push({
       id: nextId,
-      doctor_name: params[0] || 'Dr. Arjun Sharma',
-      email: params[1] || 'arjun.sharma@dentalerp.com',
-      initials: params[2] || 'DA'
+      doctor_name: params[0] || 'Dr. Arun, MDS',
+      email: params[1] || 'arun@rangasdental.com',
+      initials: params[2] || 'AA'
     });
     return [{ insertId: nextId }];
   }

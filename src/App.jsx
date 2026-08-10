@@ -19,9 +19,9 @@ export default function App() {
   const [openRegisterModal, setOpenRegisterModal] = useState(false);
 
   const doctorInfo = {
-    name: 'Dr. Arjun Sharma',
-    email: 'arjun.sharma@dentalerp.com',
-    initials: 'DA'
+    name: 'Dr. Dinesh Kumar',
+    email: 'dinesh.kumar@rangasdental.com',
+    initials: 'DK'
   };
 
   const handleToggleSidebar = () => {
@@ -260,7 +260,7 @@ export default function App() {
                     </span>
                   </div>
                   <div style={{ color: '#444' }}>
-                    <strong>Assigned Doctor:</strong> {activeInvoice.doctor || 'Dr. Arjun Sharma'}
+                    <strong>Assigned Doctor:</strong> {activeInvoice.doctor || 'Dr. Dinesh Kumar'}
                   </div>
                 </div>
 
@@ -398,7 +398,7 @@ export default function App() {
                 </span>
               </div>
               <div style={{ textTransform: 'capitalize' }}>
-                <strong>Assigned Doctor:</strong> {activeInvoice.doctor || 'Dr. Arjun Sharma'}
+                <strong>Assigned Doctor:</strong> {activeInvoice.doctor || 'Dr. Dinesh Kumar'}
               </div>
             </div>
 

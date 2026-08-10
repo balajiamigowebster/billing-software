@@ -438,7 +438,7 @@ export default function PatientList({ onNavigate, openRegisterModal, onCloseRegi
                   <Stethoscope size={16} color="var(--primary)" style={{ marginTop: '3px' }} />
                   <div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Assigned Practitioner</div>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>{selectedPatient.doctor_name || 'Dr. Arjun Sharma'}</div>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>{selectedPatient.doctor_name || 'Dr. Dinesh Kumar'}</div>
                   </div>
                 </div>
 
@@ -470,7 +470,7 @@ export default function PatientList({ onNavigate, openRegisterModal, onCloseRegi
                       <div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Assigned Doctor</div>
                         <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>
-                          {selectedPatient.appt_doctor_name || selectedPatient.doctor_name || 'Dr. Arjun Sharma'}
+                          {selectedPatient.appt_doctor_name || selectedPatient.doctor_name || 'Dr. Dinesh Kumar'}
                         </div>
                       </div>
                     </div>

@@ -435,7 +435,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice, showToa
           appointmentDate: selectedDate,
           appointmentTime: bookTimeSlot,
           reason: bookReason,
-          doctorName: 'Dr. Arjun Sharma'
+          doctorName: 'Dr. Dinesh Kumar'
         })
       });
 
@@ -554,7 +554,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice, showToa
           {/* Today's Queue */}
           <div className="card" style={{ gap: '16px' }}>
             <h3 className="card-title">Doctor's Schedule</h3>
-            <p className="card-subtitle">Upcoming appointments for Dr. Arjun.</p>
+            <p className="card-subtitle">Upcoming appointments for Dr. Dinesh Kumar.</p>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '10px', backgroundColor: 'var(--bg-input)' }}>
@@ -1218,7 +1218,7 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice, showToa
                               amount: `₹${parseFloat(inv.amount).toFixed(2)}`,
                               status: inv.status,
                               description: inv.treatment_name,
-                              doctor: 'Dr. Arjun Sharma',
+                              doctor: 'Dr. Dinesh Kumar',
                               age: inv.age,
                               gender: inv.gender
                             })}

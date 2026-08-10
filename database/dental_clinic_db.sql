@@ -80,7 +80,7 @@ CREATE TABLE `doctors` (
 
 LOCK TABLES `doctors` WRITE;
 /*!40000 ALTER TABLE `doctors` DISABLE KEYS */;
-INSERT INTO `doctors` VALUES (1,'Dr. Arjun Sharma','arjun.sharma@dentalerp.com','DA','2026-06-15 04:51:17');
+INSERT INTO `doctors` VALUES (1,'Dr. Arun, MDS','arun@rangasdental.com','AA','2026-06-15 04:51:17');
 /*!40000 ALTER TABLE `doctors` ENABLE KEYS */;
 UNLOCK TABLES;
 
