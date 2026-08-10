@@ -10,7 +10,8 @@ import {
   ChevronLeft, 
   ChevronRight,
   Stethoscope,
-  LogOut
+  LogOut,
+  Ticket
 } from 'lucide-react';
 import ProfileCard from './ProfileCard';
 
@@ -30,6 +31,7 @@ export default function Sidebar({
     { id: 'appointments', label: 'Appointments', icon: Calendar },
     { id: 'treatments', label: 'Treatments', icon: Activity },
     { id: 'billing', label: 'Billing', icon: Receipt },
+    { id: 'visitors', label: 'Visitor Pass', icon: Ticket },
     { id: 'prescriptions', label: 'Prescriptions', icon: ClipboardList },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
   ];

@@ -117,6 +117,34 @@ export async function initializeDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
+    // visitor_categories table (NEW)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`visitor_categories\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`category_name\` VARCHAR(100) NOT NULL UNIQUE,
+        \`default_amount\` DECIMAL(10, 2) DEFAULT 0.00,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // visitor_passes table (NEW)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`visitor_passes\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`pass_code\` VARCHAR(50) NOT NULL UNIQUE,
+        \`visitor_name\` VARCHAR(255) NOT NULL,
+        \`mobile_number\` VARCHAR(50) NOT NULL,
+        \`category_name\` VARCHAR(100) NOT NULL,
+        \`adults_count\` INT DEFAULT 1,
+        \`children_count\` INT DEFAULT 0,
+        \`pass_amount\` DECIMAL(10, 2) DEFAULT 0.00,
+        \`cafe_coupon\` VARCHAR(100) DEFAULT 'None',
+        \`status\` VARCHAR(50) DEFAULT 'Checked In',
+        \`issued_date\` DATE NOT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
     // 5. Seeds
     
     // Seed default doctor if doctors table is empty
@@ -223,6 +251,33 @@ export async function initializeDatabase() {
       console.log('Seeded default treatments successfully.');
     }
 
+    // Seed default visitor categories
+    const [visitorCatRows] = await pool.query('SELECT COUNT(*) as count FROM visitor_categories');
+    if (visitorCatRows[0].count === 0) {
+      await pool.query(`
+        INSERT INTO \`visitor_categories\` (\`category_name\`, \`default_amount\`)
+        VALUES 
+        ('Entry Pass', 375.00),
+        ('VIP Pass', 1000.00),
+        ('Service Provider', 0.00),
+        ('Vendor', 0.00)
+      `);
+      console.log('Seeded default visitor categories.');
+    }
+
+    // Seed default visitor passes
+    const [visitorPassRows] = await pool.query('SELECT COUNT(*) as count FROM visitor_passes');
+    if (visitorPassRows[0].count === 0) {
+      const todayDate = new Date().toISOString().split('T')[0];
+      await pool.query(`
+        INSERT INTO \`visitor_passes\` (\`pass_code\`, \`visitor_name\`, \`mobile_number\`, \`category_name\`, \`adults_count\`, \`children_count\`, \`pass_amount\`, \`cafe_coupon\`, \`status\`, \`issued_date\`)
+        VALUES 
+        ('FSV-1001', 'Rakesh Juneja', '9898989898', 'Entry Pass', 1, 0, 375.00, 'None', 'Checked In', ?),
+        ('FSV-1002', 'Amit Saxena', '9898989899', 'VIP Pass', 2, 1, 1000.00, 'None', 'Checked Out', ?)
+      `, [todayDate, todayDate]);
+      console.log('Seeded default visitor passes.');
+    }
+
     console.log('Database and tables initialized successfully!');
     return true;
   } catch (error) {
@@ -258,6 +313,16 @@ const mockDb = {
     { id: 3, treatment_code: 'T-103', treatment_name: 'Dental Veneers / Crowns', cost: 800.00, duration: '90 mins' },
     { id: 4, treatment_code: 'T-104', treatment_name: 'Composite Teeth Filling', cost: 150.00, duration: '40 mins' },
     { id: 5, treatment_code: 'T-105', treatment_name: 'Wisdom Tooth Extraction', cost: 300.00, duration: '60 mins' }
+  ],
+  visitor_categories: [
+    { id: 1, category_name: 'Entry Pass', default_amount: 375.00 },
+    { id: 2, category_name: 'VIP Pass', default_amount: 1000.00 },
+    { id: 3, category_name: 'Service Provider', default_amount: 0.00 },
+    { id: 4, category_name: 'Vendor', default_amount: 0.00 }
+  ],
+  visitor_passes: [
+    { id: 1, pass_code: 'FSV-1001', visitor_name: 'Rakesh Juneja', mobile_number: '9898989898', category_name: 'Entry Pass', adults_count: 1, children_count: 0, pass_amount: 375.00, cafe_coupon: 'None', status: 'Checked In', issued_date: new Date().toISOString().split('T')[0] },
+    { id: 2, pass_code: 'FSV-1002', visitor_name: 'Amit Saxena', mobile_number: '9898989899', category_name: 'VIP Pass', adults_count: 2, children_count: 1, pass_amount: 1000.00, cafe_coupon: 'None', status: 'Checked Out', issued_date: new Date().toISOString().split('T')[0] }
   ]
 };
 
@@ -279,6 +344,12 @@ async function mockQuery(sql, params = []) {
   }
   if (normalizedSql.includes('select count(*) as count from treatments')) {
     return [[{ count: mockDb.treatments.length }]];
+  }
+  if (normalizedSql.includes('select count(*) as count from visitor_categories')) {
+    return [[{ count: mockDb.visitor_categories.length }]];
+  }
+  if (normalizedSql.includes('select count(*) as count from visitor_passes')) {
+    return [[{ count: mockDb.visitor_passes.length }]];
   }
 
   // 1. Fetch patients
@@ -478,6 +549,92 @@ async function mockQuery(sql, params = []) {
     const idx = mockDb.invoices.findIndex(inv => inv.id === id);
     if (idx !== -1) {
       mockDb.invoices.splice(idx, 1);
+      return [{ affectedRows: 1 }];
+    }
+    return [{ affectedRows: 0 }];
+  }
+
+  // --- Visitor Categories Intercepts ---
+  if (normalizedSql.includes('select * from visitor_categories') || normalizedSql.includes('from visitor_categories')) {
+    return [mockDb.visitor_categories];
+  }
+
+  if (normalizedSql.includes('insert into visitor_categories') || normalizedSql.includes('insert into `visitor_categories`')) {
+    const nextId = mockDb.visitor_categories.length > 0 ? Math.max(...mockDb.visitor_categories.map(c => c.id)) + 1 : 1;
+    mockDb.visitor_categories.push({
+      id: nextId,
+      category_name: params[0],
+      default_amount: parseFloat(params[1])
+    });
+    return [{ insertId: nextId }];
+  }
+
+  if (normalizedSql.includes('delete from visitor_categories') || normalizedSql.includes('delete from `visitor_categories`')) {
+    const id = parseInt(params[0], 10);
+    const idx = mockDb.visitor_categories.findIndex(c => c.id === id);
+    if (idx !== -1) {
+      mockDb.visitor_categories.splice(idx, 1);
+      return [{ affectedRows: 1 }];
+    }
+    return [{ affectedRows: 0 }];
+  }
+
+  // --- Visitor Passes Intercepts ---
+  if (normalizedSql.includes('select * from visitor_passes') || normalizedSql.includes('from visitor_passes')) {
+    const list = [...mockDb.visitor_passes].sort((a, b) => b.id - a.id);
+    return [list];
+  }
+
+  if (normalizedSql.includes('select pass_code from visitor_passes')) {
+    const list = [...mockDb.visitor_passes].sort((a, b) => b.id - a.id);
+    return [list];
+  }
+
+  if (normalizedSql.includes('insert into visitor_passes') || normalizedSql.includes('insert into `visitor_passes`')) {
+    const nextId = mockDb.visitor_passes.length > 0 ? Math.max(...mockDb.visitor_passes.map(p => p.id)) + 1 : 1;
+    mockDb.visitor_passes.push({
+      id: nextId,
+      pass_code: params[0],
+      visitor_name: params[1],
+      mobile_number: params[2],
+      category_name: params[3],
+      adults_count: parseInt(params[4], 10),
+      children_count: parseInt(params[5], 10),
+      pass_amount: parseFloat(params[6]),
+      cafe_coupon: params[7],
+      status: params[8],
+      issued_date: params[9]
+    });
+    return [{ insertId: nextId }];
+  }
+
+  if (normalizedSql.includes('update visitor_passes') || normalizedSql.includes('update `visitor_passes`')) {
+    const id = parseInt(params[params.length - 1], 10);
+    const pass = mockDb.visitor_passes.find(p => p.id === id);
+    if (pass) {
+      if (params.length === 2) {
+        pass.status = params[0];
+      } else {
+        pass.visitor_name = params[0];
+        pass.mobile_number = params[1];
+        pass.category_name = params[2];
+        pass.adults_count = parseInt(params[3], 10);
+        pass.children_count = parseInt(params[4], 10);
+        pass.pass_amount = parseFloat(params[5]);
+        pass.cafe_coupon = params[6];
+        pass.status = params[7];
+        pass.issued_date = params[8];
+      }
+      return [{ affectedRows: 1 }];
+    }
+    return [{ affectedRows: 0 }];
+  }
+
+  if (normalizedSql.includes('delete from visitor_passes') || normalizedSql.includes('delete from `visitor_passes`')) {
+    const id = parseInt(params[0], 10);
+    const idx = mockDb.visitor_passes.findIndex(p => p.id === id);
+    if (idx !== -1) {
+      mockDb.visitor_passes.splice(idx, 1);
       return [{ affectedRows: 1 }];
     }
     return [{ affectedRows: 0 }];

@@ -114,11 +114,85 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice, showToa
   const [deleteInvoiceError, setDeleteInvoiceError] = useState('');
   const [isDeletingInvoice, setIsDeletingInvoice] = useState(false);
 
+  // Visitor Passes & Categories States
+  const [visitorPasses, setVisitorPasses] = useState([]);
+  const [visitorCategories, setVisitorCategories] = useState([]);
+  const [visitorSearch, setVisitorSearch] = useState('');
+  const [selectedVisitorCategory, setSelectedVisitorCategory] = useState('');
+  
+  // Category management modal
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryAmount, setNewCategoryAmount] = useState('');
+  const [categoryModalError, setCategoryModalError] = useState('');
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
+
+  // Issue Entry Pass Modal
+  const [showIssuePassModal, setShowIssuePassModal] = useState(false);
+  const [nextPassCode, setNextPassCode] = useState('');
+  const [passVisitorName, setPassVisitorName] = useState('');
+  const [passMobileNumber, setPassMobileNumber] = useState('');
+  const [passCategory, setPassCategory] = useState('Entry Pass');
+  const [passAdultsCount, setPassAdultsCount] = useState(1);
+  const [passChildrenCount, setPassChildrenCount] = useState(0);
+  const [passAmount, setPassAmount] = useState(375);
+  const [passCafeCoupon, setPassCafeCoupon] = useState('None');
+  const [passStatus, setPassStatus] = useState('Checked In');
+  const [passIssuedDate, setPassIssuedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [issuePassError, setIssuePassError] = useState('');
+  const [isIssuingPass, setIsIssuingPass] = useState(false);
+
+  // Edit Visitor Pass Modal
+  const [showEditPassModal, setShowEditPassModal] = useState(false);
+  const [editingPass, setEditingPass] = useState(null);
+  const [editPassVisitorName, setEditPassVisitorName] = useState('');
+  const [editPassMobileNumber, setEditPassMobileNumber] = useState('');
+  const [editPassCategory, setEditPassCategory] = useState('');
+  const [editPassAdultsCount, setEditPassAdultsCount] = useState(1);
+  const [editPassChildrenCount, setEditPassChildrenCount] = useState(0);
+  const [editPassAmount, setEditPassAmount] = useState(0);
+  const [editPassCafeCoupon, setEditPassCafeCoupon] = useState('None');
+  const [editPassStatus, setEditPassStatus] = useState('Checked In');
+  const [editPassIssuedDate, setEditPassIssuedDate] = useState('');
+  const [editPassError, setEditPassError] = useState('');
+  const [isUpdatingPass, setIsUpdatingPass] = useState(false);
+
+  // Delete Pass Confirmation Modal
+  const [showDeletePassModal, setShowDeletePassModal] = useState(false);
+  const [deletingPass, setDeletingPass] = useState(null);
+  const [deletePassError, setDeletePassError] = useState('');
+  const [isDeletingPass, setIsDeletingPass] = useState(false);
+
+  // QR Code / Printable Pass Preview Popup
+  const [showPassPrintModal, setShowPassPrintModal] = useState(false);
+  const [printingPass, setPrintingPass] = useState(null);
+
   const fetchTreatments = () => {
     fetch(`${API_BASE}/api/treatments`)
       .then((res) => res.json())
       .then((data) => setTreatments(data))
       .catch((err) => console.error('Error loading treatments:', err));
+  };
+
+  const fetchVisitorCategories = () => {
+    fetch(`${API_BASE}/api/visitors/categories`)
+      .then((res) => res.json())
+      .then((data) => setVisitorCategories(data))
+      .catch((err) => console.error('Error loading visitor categories:', err));
+  };
+
+  const fetchVisitorPasses = () => {
+    fetch(`${API_BASE}/api/visitors/passes`)
+      .then((res) => res.json())
+      .then((data) => setVisitorPasses(data))
+      .catch((err) => console.error('Error loading visitor passes:', err));
+  };
+
+  const fetchNextPassCode = () => {
+    fetch(`${API_BASE}/api/visitors/passes/next-code`)
+      .then((res) => res.json())
+      .then((data) => setNextPassCode(data.nextCode))
+      .catch((err) => console.error('Error loading next pass code:', err));
   };
 
   const fetchInvoices = () => {
@@ -147,6 +221,10 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice, showToa
       fetchInvoices();
     } else if (tab === 'appointments') {
       fetchAppointments(selectedDate);
+    } else if (tab === 'visitors') {
+      fetchVisitorCategories();
+      fetchVisitorPasses();
+      fetchNextPassCode();
     }
   }, [tab, selectedDate]);
 
@@ -435,6 +513,192 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice, showToa
       setDeleteInvoiceError('Failed to delete invoice from database.');
     } finally {
       setIsDeletingInvoice(false);
+    }
+  };
+
+  // --- Visitor Categories Handlers ---
+  const handleSaveCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+    setIsSavingCategory(true);
+    setCategoryModalError('');
+    try {
+      const res = await fetch(`${API_BASE}/api/visitors/categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categoryName: newCategoryName, defaultAmount: newCategoryAmount })
+      });
+      if (!res.ok) throw new Error('Failed to save category');
+      setNewCategoryName('');
+      setNewCategoryAmount('');
+      fetchVisitorCategories();
+      if (showToast) showToast('Visitor category added successfully!');
+    } catch (err) {
+      console.error(err);
+      setCategoryModalError('Failed to save category.');
+    } finally {
+      setIsSavingCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this category?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/visitors/categories/${id}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Failed to delete category');
+      fetchVisitorCategories();
+      if (showToast) showToast('Visitor category deleted successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete category.');
+    }
+  };
+
+  // --- Visitor Passes Handlers ---
+  const handleOpenIssuePassModal = () => {
+    setPassVisitorName('');
+    setPassMobileNumber('');
+    setPassCategory('Entry Pass');
+    setPassAdultsCount(1);
+    setPassChildrenCount(0);
+    setPassAmount(375);
+    setPassCafeCoupon('None');
+    setPassStatus('Checked In');
+    setPassIssuedDate(new Date().toISOString().split('T')[0]);
+    setIssuePassError('');
+    setShowIssuePassModal(true);
+    fetchNextPassCode();
+  };
+
+  const handleConfirmIssuePass = async (e) => {
+    e.preventDefault();
+    if (!passVisitorName.trim() || !passMobileNumber.trim()) {
+      setIssuePassError('Please fill out all fields.');
+      return;
+    }
+    setIsIssuingPass(true);
+    setIssuePassError('');
+    try {
+      const res = await fetch(`${API_BASE}/api/visitors/passes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          visitorName: passVisitorName,
+          mobileNumber: passMobileNumber,
+          categoryName: passCategory,
+          adultsCount: passAdultsCount,
+          childrenCount: passChildrenCount,
+          passAmount: passAmount,
+          cafeCoupon: passCafeCoupon,
+          status: passStatus,
+          issuedDate: passIssuedDate
+        })
+      });
+      if (!res.ok) throw new Error('Failed to issue pass');
+      setShowIssuePassModal(false);
+      fetchVisitorPasses();
+      if (showToast) showToast('Visitor pass issued successfully!');
+    } catch (err) {
+      console.error(err);
+      setIssuePassError('Failed to issue entry pass.');
+    } finally {
+      setIsIssuingPass(false);
+    }
+  };
+
+  const handleOpenEditPassModal = (pass) => {
+    setEditingPass(pass);
+    setEditPassVisitorName(pass.visitor_name);
+    setEditPassMobileNumber(pass.mobile_number);
+    setEditPassCategory(pass.category_name);
+    setEditPassAdultsCount(pass.adults_count);
+    setEditPassChildrenCount(pass.children_count);
+    setEditPassAmount(pass.pass_amount);
+    setEditPassCafeCoupon(pass.cafe_coupon);
+    setEditPassStatus(pass.status);
+    setEditPassIssuedDate(pass.issued_date.substring(0, 10));
+    setEditPassError('');
+    setShowEditPassModal(true);
+  };
+
+  const handleConfirmEditPass = async (e) => {
+    e.preventDefault();
+    if (!editPassVisitorName.trim() || !editPassMobileNumber.trim()) {
+      setEditPassError('Please fill out all fields.');
+      return;
+    }
+    setIsUpdatingPass(true);
+    setEditPassError('');
+    try {
+      const res = await fetch(`${API_BASE}/api/visitors/passes/${editingPass.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          visitorName: editPassVisitorName,
+          mobileNumber: editPassMobileNumber,
+          categoryName: editPassCategory,
+          adultsCount: editPassAdultsCount,
+          childrenCount: editPassChildrenCount,
+          passAmount: editPassAmount,
+          cafeCoupon: editPassCafeCoupon,
+          status: editPassStatus,
+          issuedDate: editPassIssuedDate
+        })
+      });
+      if (!res.ok) throw new Error('Failed to update pass');
+      setShowEditPassModal(false);
+      fetchVisitorPasses();
+      if (showToast) showToast('Visitor pass updated successfully!');
+    } catch (err) {
+      console.error(err);
+      setEditPassError('Failed to update visitor pass.');
+    } finally {
+      setIsUpdatingPass(false);
+    }
+  };
+
+  const handleTogglePassStatus = async (pass) => {
+    const nextStatus = pass.status === 'Checked In' ? 'Checked Out' : 'Checked In';
+    try {
+      const res = await fetch(`${API_BASE}/api/visitors/passes/${pass.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      if (!res.ok) throw new Error('Failed to update status');
+      fetchVisitorPasses();
+      if (showToast) showToast(`Visitor successfully ${nextStatus === 'Checked In' ? 'Checked In' : 'Checked Out'}!`);
+    } catch (err) {
+      console.error(err);
+      if (showToast) showToast('Failed to update visitor status.');
+    }
+  };
+
+  const handleOpenDeletePassModal = (pass) => {
+    setDeletingPass(pass);
+    setDeletePassError('');
+    setShowDeletePassModal(true);
+  };
+
+  const handleConfirmDeletePass = async () => {
+    if (!deletingPass) return;
+    setIsDeletingPass(true);
+    setDeletePassError('');
+    try {
+      const res = await fetch(`${API_BASE}/api/visitors/passes/${deletingPass.id}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Failed to delete pass');
+      setShowDeletePassModal(false);
+      fetchVisitorPasses();
+      if (showToast) showToast('Visitor pass deleted successfully!');
+    } catch (err) {
+      console.error(err);
+      setDeletePassError('Failed to delete visitor pass.');
+    } finally {
+      setIsDeletingPass(false);
     }
   };
 
@@ -1594,6 +1858,695 @@ export default function MockDashboard({ tab, onNavigate, onPrintInvoice, showToa
             </div>
           </div>
         )}
+      </div>
+    );
+  }
+
+  if (tab === 'visitors') {
+    const filteredPasses = visitorPasses.filter((pass) => {
+      const matchesSearch = 
+        pass.visitor_name.toLowerCase().includes(visitorSearch.toLowerCase()) ||
+        pass.mobile_number.includes(visitorSearch) ||
+        pass.pass_code.toLowerCase().includes(visitorSearch.toLowerCase()) ||
+        pass.category_name.toLowerCase().includes(visitorSearch.toLowerCase());
+      
+      const matchesCategory = !selectedVisitorCategory || pass.category_name === selectedVisitorCategory;
+
+      return matchesSearch && matchesCategory;
+    });
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayPasses = visitorPasses.filter(p => p.issued_date.substring(0,10) === todayStr);
+    const todayRevenue = todayPasses.reduce((acc, p) => acc + parseFloat(p.pass_amount || 0), 0);
+    const insideToday = visitorPasses
+      .filter(p => p.status === 'Checked In')
+      .reduce((acc, p) => acc + parseInt(p.adults_count || 0) + parseInt(p.children_count || 0), 0);
+
+    const totalIssuedToday = todayPasses.length;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        
+        {/* Header Block */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <button 
+            className="btn btn-secondary" 
+            style={{ padding: '6px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '20px' }}
+            onClick={() => onNavigate('dashboard')}
+          >
+            ← Back to Dashboard
+          </button>
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'hsl(142, 70%, 35%)', textTransform: 'uppercase', backgroundColor: 'hsl(142, 70%, 95%)', padding: '4px 12px', borderRadius: '12px' }}>
+            MODULE: VISITORS
+          </span>
+        </div>
+
+        {/* Top metrics row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+          {/* Revenue */}
+          <div className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', background: 'var(--card-bg)' }}>
+            <div>
+              <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0' }}>ENTRY PASS REVENUE TODAY</p>
+              <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>₹{todayRevenue.toLocaleString('en-IN')}</h3>
+            </div>
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: 'hsl(142, 70%, 95%)', color: 'hsl(142, 70%, 40%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 700 }}>
+              ₹
+            </div>
+          </div>
+
+          {/* Pax inside */}
+          <div className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', background: 'var(--card-bg)' }}>
+            <div>
+              <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0' }}>VISITORS INSIDE TODAY</p>
+              <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{insideToday} Pax In-Site</h3>
+            </div>
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: 'hsl(266, 70%, 95%)', color: 'hsl(266, 70%, 60%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Users size={24} />
+            </div>
+          </div>
+
+          {/* Issued count */}
+          <div className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', background: 'var(--card-bg)' }}>
+            <div>
+              <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0' }}>ENTRY PASSES ISSUED</p>
+              <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{totalIssuedToday} Issued</h3>
+            </div>
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: 'hsl(200, 70%, 95%)', color: 'hsl(200, 70%, 50%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Ticket size={24} />
+            </div>
+          </div>
+        </div>
+
+        {/* Heading Section */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, margin: '0 0 6px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              Entry Pass 🎫
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>
+              Issue entry passes, customize & delete pass categories, edit pricing, and track visitor metrics
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <button 
+              className="btn btn-secondary" 
+              style={{ padding: '10px 18px', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              onClick={() => setShowCategoryModal(true)}
+            >
+              Manage Categories
+            </button>
+            <button 
+              className="btn btn-primary" 
+              style={{ padding: '10px 18px', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: 'hsl(142, 70%, 35%)', borderColor: 'hsl(142, 70%, 35%)' }}
+              onClick={handleOpenIssuePassModal}
+            >
+              + Issue Entry Pass
+            </button>
+          </div>
+        </div>
+
+        {/* Search & Filters */}
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
+            <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+            <input 
+              type="text" 
+              placeholder="Search entry passes by name, phone, category..." 
+              className="form-input" 
+              style={{ paddingLeft: '44px', width: '100%' }}
+              value={visitorSearch}
+              onChange={(e) => setVisitorSearch(e.target.value)}
+            />
+          </div>
+          <select 
+            className="form-select" 
+            style={{ width: '220px', minWidth: '200px' }}
+            value={selectedVisitorCategory}
+            onChange={(e) => setSelectedVisitorCategory(e.target.value)}
+          >
+            <option value="">All Entry Pass Categories</option>
+            {visitorCategories.map(cat => (
+              <option key={cat.id} value={cat.category_name}>{cat.category_name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Table List */}
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          {filteredPasses.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+              No entry passes found matching criteria.
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '850px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)' }}>
+                    <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Pass ID / Category</th>
+                    <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Visitor Details</th>
+                    <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Head Count</th>
+                    <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Pass Amount</th>
+                    <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Cafe Coupon</th>
+                    <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Status</th>
+                    <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPasses.map((pass) => (
+                    <tr key={pass.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background-color 0.2s' }}>
+                      <td style={{ padding: '14px 18px' }}>
+                        <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{pass.category_name}</div>
+                        <div style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--text-secondary)', marginTop: '2px' }}>{pass.pass_code}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>Issued: {pass.issued_date.substring(0, 10)}</div>
+                      </td>
+                      <td style={{ padding: '14px 18px' }}>
+                        <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{pass.visitor_name}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{pass.mobile_number}</div>
+                      </td>
+                      <td style={{ padding: '14px 18px', fontWeight: 600 }}>
+                        {pass.adults_count} Adult{pass.adults_count > 1 ? 's' : ''}, {pass.children_count} Child{pass.children_count > 1 ? 'ren' : ''}
+                      </td>
+                      <td style={{ padding: '14px 18px', fontWeight: 700, color: 'hsl(142, 70%, 40%)' }}>
+                        ₹{parseFloat(pass.pass_amount).toFixed(2)}
+                      </td>
+                      <td style={{ padding: '14px 18px', color: 'var(--text-secondary)' }}>
+                        {pass.cafe_coupon}
+                      </td>
+                      <td style={{ padding: '14px 18px' }}>
+                        <button
+                          style={{
+                            border: 'none',
+                            cursor: 'pointer',
+                            backgroundColor: pass.status === 'Checked In' ? 'hsl(142, 70%, 95%)' : 'hsl(0, 80%, 96%)',
+                            color: pass.status === 'Checked In' ? 'hsl(142, 70%, 35%)' : 'hsl(0, 80%, 45%)',
+                            padding: '6px 12px',
+                            borderRadius: '12px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                          onClick={() => handleTogglePassStatus(pass)}
+                          title="Click to toggle check-in status"
+                        >
+                          ● {pass.status}
+                        </button>
+                      </td>
+                      <td style={{ padding: '14px 18px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => handleOpenEditPassModal(pass)}
+                          >
+                            <Pencil size={12} /> Edit
+                          </button>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => {
+                              setPrintingPass(pass);
+                              setShowPassPrintModal(true);
+                            }}
+                          >
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <rect width="14" height="14" x="5" y="5" rx="2" />
+                              <rect width="4" height="4" x="9" y="9" />
+                              <path d="M9 15h1M15 9h1M15 15h1" />
+                            </svg> Pass
+                          </button>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'hsl(0, 84%, 60%)' }}
+                            onClick={() => handleOpenDeletePassModal(pass)}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* --- MODALS --- */}
+
+        {/* 1. Manage Categories Modal */}
+        {showCategoryModal && (
+          <div className="modal-backdrop" onClick={() => setShowCategoryModal(false)}>
+            <div className="invoice-modal" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
+              <div className="invoice-modal-header">
+                <h3 style={{ fontWeight: 800 }}>Manage Entry Pass Categories</h3>
+                <button style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => setShowCategoryModal(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="invoice-modal-body" style={{ gap: '16px', maxHeight: '70vh' }}>
+                {categoryModalError && (
+                  <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: 'hsl(0, 75%, 95%)', color: 'hsl(0, 75%, 45%)', fontSize: '0.85rem' }}>
+                    {categoryModalError}
+                  </div>
+                )}
+                
+                <form onSubmit={handleSaveCategory} style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap', borderBottom: '1px solid var(--border-color)', paddingBottom: '20px' }}>
+                  <div style={{ flex: 2, minWidth: '160px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Category Name</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Guest Pass" 
+                      className="form-input"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: '100px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Default Amount (₹)</label>
+                    <input 
+                      type="number" 
+                      placeholder="375" 
+                      className="form-input"
+                      value={newCategoryAmount}
+                      onChange={(e) => setNewCategoryAmount(e.target.value)}
+                    />
+                  </div>
+                  <button type="submit" className="btn btn-primary" style={{ padding: '10px 16px' }} disabled={isSavingCategory}>
+                    Add
+                  </button>
+                </form>
+
+                <div>
+                  <h4 style={{ fontWeight: 700, fontSize: '0.95rem', margin: '0 0 12px 0' }}>Existing Categories</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {visitorCategories.map(cat => (
+                      <div key={cat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '8px', backgroundColor: 'var(--bg-input)' }}>
+                        <div>
+                          <strong style={{ fontSize: '0.9rem' }}>{cat.category_name}</strong>
+                          <span style={{ marginLeft: '10px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Default: ₹{parseFloat(cat.default_amount).toFixed(2)}</span>
+                        </div>
+                        {cat.id > 4 && (
+                          <button 
+                            style={{ border: 'none', background: 'none', color: 'hsl(0, 84%, 60%)', cursor: 'pointer' }}
+                            onClick={() => handleDeleteCategory(cat.id)}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="invoice-modal-footer">
+                <button className="btn btn-secondary" onClick={() => setShowCategoryModal(false)}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 2. Issue Entry Pass Modal */}
+        {showIssuePassModal && (
+          <div className="modal-backdrop" onClick={() => setShowIssuePassModal(false)}>
+            <div className="invoice-modal" style={{ maxWidth: '550px' }} onClick={(e) => e.stopPropagation()}>
+              <div className="invoice-modal-header">
+                <h3 style={{ fontWeight: 800 }}>Issue New Entry Pass</h3>
+                <button style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => setShowIssuePassModal(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={handleConfirmIssuePass}>
+                <div className="invoice-modal-body" style={{ gap: '16px' }}>
+                  {issuePassError && (
+                    <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: 'hsl(0, 75%, 95%)', color: 'hsl(0, 75%, 45%)', fontSize: '0.85rem' }}>
+                      {issuePassError}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Pass Code</label>
+                      <input type="text" className="form-input" value={nextPassCode} disabled style={{ backgroundColor: 'var(--bg-input)', fontFamily: 'monospace', fontWeight: 600 }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Category</label>
+                      <select 
+                        className="form-select"
+                        value={passCategory}
+                        onChange={(e) => {
+                          const catName = e.target.value;
+                          setPassCategory(catName);
+                          const matchingCat = visitorCategories.find(c => c.category_name === catName);
+                          if (matchingCat) setPassAmount(parseFloat(matchingCat.default_amount));
+                        }}
+                      >
+                        {visitorCategories.map(cat => (
+                          <option key={cat.id} value={cat.category_name}>{cat.category_name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Visitor Name</label>
+                      <input 
+                        type="text" 
+                        placeholder="Rakesh Juneja" 
+                        className="form-input"
+                        value={passVisitorName}
+                        onChange={(e) => setPassVisitorName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Mobile Number</label>
+                      <input 
+                        type="tel" 
+                        placeholder="9898989898" 
+                        className="form-input"
+                        value={passMobileNumber}
+                        onChange={(e) => setPassMobileNumber(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: '120px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Adults Count</label>
+                      <input 
+                        type="number" 
+                        className="form-input"
+                        min="1"
+                        value={passAdultsCount}
+                        onChange={(e) => setPassAdultsCount(parseInt(e.target.value, 10))}
+                        required
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: '120px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Children Count</label>
+                      <input 
+                        type="number" 
+                        className="form-input"
+                        min="0"
+                        value={passChildrenCount}
+                        onChange={(e) => setPassChildrenCount(parseInt(e.target.value, 10))}
+                        required
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: '120px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Amount (₹)</label>
+                      <input 
+                        type="number" 
+                        className="form-input"
+                        value={passAmount}
+                        onChange={(e) => setPassAmount(parseFloat(e.target.value))}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Cafe Coupon</label>
+                      <select className="form-select" value={passCafeCoupon} onChange={(e) => setPassCafeCoupon(e.target.value)}>
+                        <option value="None">None</option>
+                        <option value="₹50 Discount">₹50 Discount Coupon</option>
+                        <option value="Free Tea/Coffee">Free Tea/Coffee Coupon</option>
+                      </select>
+                    </div>
+                    <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Issued Date</label>
+                      <input type="date" className="form-input" value={passIssuedDate} onChange={(e) => setPassIssuedDate(e.target.value)} required />
+                    </div>
+                  </div>
+                </div>
+                <div className="invoice-modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowIssuePassModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" style={{ backgroundColor: 'hsl(142, 70%, 35%)', borderColor: 'hsl(142, 70%, 35%)' }} disabled={isIssuingPass}>
+                    {isIssuingPass ? 'Issuing...' : 'Issue Pass'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* 3. Edit Entry Pass Modal */}
+        {showEditPassModal && editingPass && (
+          <div className="modal-backdrop" onClick={() => setShowEditPassModal(false)}>
+            <div className="invoice-modal" style={{ maxWidth: '550px' }} onClick={(e) => e.stopPropagation()}>
+              <div className="invoice-modal-header">
+                <h3 style={{ fontWeight: 800 }}>Edit Entry Pass Details</h3>
+                <button style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => setShowEditPassModal(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={handleConfirmEditPass}>
+                <div className="invoice-modal-body" style={{ gap: '16px' }}>
+                  {editPassError && (
+                    <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: 'hsl(0, 75%, 95%)', color: 'hsl(0, 75%, 45%)', fontSize: '0.85rem' }}>
+                      {editPassError}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Pass Code</label>
+                      <input type="text" className="form-input" value={editingPass.pass_code} disabled style={{ backgroundColor: 'var(--bg-input)', fontFamily: 'monospace', fontWeight: 600 }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Category</label>
+                      <select 
+                        className="form-select"
+                        value={editPassCategory}
+                        onChange={(e) => {
+                          const catName = e.target.value;
+                          setEditPassCategory(catName);
+                          const matchingCat = visitorCategories.find(c => c.category_name === catName);
+                          if (matchingCat) setEditPassAmount(parseFloat(matchingCat.default_amount));
+                        }}
+                      >
+                        {visitorCategories.map(cat => (
+                          <option key={cat.id} value={cat.category_name}>{cat.category_name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Visitor Name</label>
+                      <input 
+                        type="text" 
+                        className="form-input"
+                        value={editPassVisitorName}
+                        onChange={(e) => setEditPassVisitorName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Mobile Number</label>
+                      <input 
+                        type="tel" 
+                        className="form-input"
+                        value={editPassMobileNumber}
+                        onChange={(e) => setEditPassMobileNumber(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: '120px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Adults Count</label>
+                      <input 
+                        type="number" 
+                        className="form-input"
+                        min="1"
+                        value={editPassAdultsCount}
+                        onChange={(e) => setEditPassAdultsCount(parseInt(e.target.value, 10))}
+                        required
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: '120px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Children Count</label>
+                      <input 
+                        type="number" 
+                        className="form-input"
+                        min="0"
+                        value={editPassChildrenCount}
+                        onChange={(e) => setEditPassChildrenCount(parseInt(e.target.value, 10))}
+                        required
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: '120px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Amount (₹)</label>
+                      <input 
+                        type="number" 
+                        className="form-input"
+                        value={editPassAmount}
+                        onChange={(e) => setEditPassAmount(parseFloat(e.target.value))}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Cafe Coupon</label>
+                      <select className="form-select" value={editPassCafeCoupon} onChange={(e) => setEditPassCafeCoupon(e.target.value)}>
+                        <option value="None">None</option>
+                        <option value="₹50 Discount">₹50 Discount Coupon</option>
+                        <option value="Free Tea/Coffee">Free Tea/Coffee Coupon</option>
+                      </select>
+                    </div>
+                    <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label className="form-label">Issued Date</label>
+                      <input type="date" className="form-input" value={editPassIssuedDate} onChange={(e) => setEditPassIssuedDate(e.target.value)} required />
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ gap: '6px' }}>
+                    <label className="form-label">Status</label>
+                    <select className="form-select" value={editPassStatus} onChange={(e) => setEditPassStatus(e.target.value)}>
+                      <option value="Checked In">Checked In</option>
+                      <option value="Checked Out">Checked Out</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="invoice-modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowEditPassModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" disabled={isUpdatingPass}>
+                    {isUpdatingPass ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* 4. Delete Pass Confirmation Modal */}
+        {showDeletePassModal && deletingPass && (
+          <div className="modal-backdrop" onClick={() => setShowDeletePassModal(false)}>
+            <div className="invoice-modal" style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
+              <div className="invoice-modal-header" style={{ borderBottom: 'none', padding: '24px 24px 8px 24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: 'hsl(0, 100%, 96%)',
+                    color: 'hsl(0, 84%, 60%)'
+                  }}>
+                    <Trash2 size={20} />
+                  </div>
+                  <h3 style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--text-primary)' }}>Delete Pass?</h3>
+                </div>
+                <button style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => setShowDeletePassModal(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="invoice-modal-body" style={{ gap: '12px', padding: '8px 24px 24px 24px' }}>
+                {deletePassError && (
+                  <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: 'hsl(0, 75%, 95%)', color: 'hsl(0, 75%, 45%)', fontSize: '0.85rem' }}>
+                    {deletePassError}
+                  </div>
+                )}
+                <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: 0 }}>
+                  Are you sure you want to delete visitor pass <strong style={{ color: 'var(--text-primary)' }}>{deletingPass.pass_code}</strong> for <strong style={{ color: 'var(--text-primary)' }}>{deletingPass.visitor_name}</strong>? This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="invoice-modal-footer" style={{ borderTop: 'none', padding: '16px 24px 24px 24px', backgroundColor: 'transparent' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowDeletePassModal(false)} disabled={isDeletingPass}>Cancel</button>
+                <button type="button" className="btn btn-danger" onClick={handleConfirmDeletePass} disabled={isDeletingPass}>
+                  {isDeletingPass ? 'Deleting...' : 'Delete Pass'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 5. Pass Printable Pass Preview popup */}
+        {showPassPrintModal && printingPass && (
+          <div className="modal-backdrop" onClick={() => setShowPassPrintModal(false)}>
+            <div className="invoice-modal" style={{ maxWidth: '400px', padding: '20px' }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px dashed var(--border-color)', paddingBottom: '12px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Ticket size={20} color="var(--primary)" />
+                  <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>Ranga's Entry Pass</span>
+                </div>
+                <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} onClick={() => setShowPassPrintModal(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ border: '2px solid var(--border-color)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', background: 'var(--bg-input)' }}>
+                <div style={{ fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 600, color: 'var(--text-secondary)' }}>{printingPass.category_name.toUpperCase()}</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '1px' }}>{printingPass.pass_code}</div>
+                
+                <div style={{ width: '130px', height: '130px', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px', background: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${printingPass.pass_code}%7C${printingPass.visitor_name}%7C${printingPass.mobile_number}`}
+                    alt="QR Code"
+                    style={{ width: '120px', height: '120px' }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
+
+                <div style={{ width: '100%', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px dashed var(--border-color)', paddingTop: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Visitor:</span>
+                    <strong style={{ color: 'var(--text-primary)' }}>{printingPass.visitor_name}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Mobile:</span>
+                    <strong style={{ color: 'var(--text-primary)' }}>{printingPass.mobile_number}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Head Count:</span>
+                    <strong style={{ color: 'var(--text-primary)' }}>{printingPass.adults_count} A, {printingPass.children_count} C</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Paid Amount:</span>
+                    <strong style={{ color: 'hsl(142, 70%, 40%)' }}>₹{parseFloat(printingPass.pass_amount).toFixed(2)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Cafe Coupon:</span>
+                    <strong style={{ color: 'var(--text-primary)' }}>{printingPass.cafe_coupon}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Issued:</span>
+                    <strong style={{ color: 'var(--text-primary)' }}>{printingPass.issued_date.substring(0, 10)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
+                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowPassPrintModal(false)}>Close</button>
+                <button 
+                  className="btn btn-primary" 
+                  style={{ flex: 1, backgroundColor: 'hsl(142, 70%, 35%)', borderColor: 'hsl(142, 70%, 35%)' }}
+                  onClick={() => window.print()}
+                >
+                  Print Pass
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     );
   }
